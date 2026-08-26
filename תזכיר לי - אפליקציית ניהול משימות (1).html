@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>תזכיר לי - פשוט להקליט, לצלם ולזכור</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f4f8',
+                            100: '#d9e4ed',
+                            500: '#2c698d', 
+                            600: '#1b4965',
+                            700: '#133549',
+                            800: '#0c222f',
+                            900: '#07141c',
+                        },
+                        gold: {
+                            50: '#fdf9ee',
+                            100: '#f8efcd',
+                            200: '#f2e09b',
+                            300: '#ebd169',
+                            400: '#e5c237',
+                            500: '#d4af37',
+                            600: '#b5952f',
+                            700: '#947a26',
+                            800: '#75601e',
+                            900: '#5c4b18',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Rubik', 'Noto Sans Hebrew', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Rubik', system-ui, sans-serif;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 9999px; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .task-completed { text-decoration: line-through; opacity: 0.6; }
+        .pulse-recording { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .bell-ring {
+            animation: bell 1.5s ease-in-out infinite;
+            transform-origin: top center;
+        }
+        @keyframes bell {
+            0%, 70%, 100% { transform: rotate(0); }
+            10% { transform: rotate(15deg); }
+            20% { transform: rotate(-15deg); }
+            30% { transform: rotate(10deg); }
+            40% { transform: rotate(-10deg); }
+            50% { transform: rotate(5deg); }
+            60% { transform: rotate(-5deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200 select-none pb-28 sm:pb-8" onclick="initAudioContext()">
+
+    <!-- כותרת ראשית -->
+    <header class="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="relative w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-slate-200/80 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-800">
+                    <img src="67014.png" alt="לוגו תזכיר לי" class="w-full h-full object-contain p-0.5">
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-black bg-gradient-to-r from-brand-600 to-gold-500 bg-clip-text text-transparent dark:from-brand-400 dark:to-gold-300">
+                            תזכיר לי
+                        </h1>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight">
+                        פשוט להקליט, לצלם ולזכור • <span id="current-date-display">היום</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleModal('backup-modal')" title="גיבוי וייצוא נתונים" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                </button>
+                <button onclick="toggleDarkMode()" title="החלף ערכת נושא" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg id="theme-icon-dark" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg id="theme-icon-light" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- תוכן מרכזי -->
+    <main class="max-w-4xl w-full mx-auto px-4 py-4 flex-1 flex flex-col gap-4">
+
+        <!-- ווידג'ט התקדמות יומית -->
+        <section id="daily-progress-widget" class="bg-gradient-to-br from-brand-700 via-brand-600 to-gold-500 rounded-3xl p-5 text-white shadow-lg shadow-brand-700/15 relative overflow-hidden transition-all">
+            <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-medium mb-2 text-gold-50">
+                        <span>🎯</span> התקדמות יומית
+                    </div>
+                    <h2 class="text-xl font-bold text-white" id="progress-title">היום שלך מתחיל כאן</h2>
+                    <p class="text-xs text-brand-100 mt-0.5" id="progress-subtitle">0 מתוך 0 משימות הושלמו</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-full sm:w-48 bg-white/20 h-3 rounded-full overflow-hidden p-0.5 backdrop-blur-sm">
+                        <div id="progress-bar-fill" class="bg-gold-400 h-full rounded-full transition-all duration-500 w-0"></div>
+                    </div>
+                    <span id="progress-percent" class="font-extrabold text-lg sm:text-2xl min-w-[3rem] text-left text-gold-200">0%</span>
+                </div>
+            </div>
+            <div class="absolute -bottom-10 -left-10 w-36 h-36 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+        </section>
+
+        <!-- סרגל חיפוש וסינון -->
+        <section class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+                <svg class="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <input type="text" id="search-input" oninput="renderTasks()" placeholder="חיפוש משימה..." 
+                    class="w-full pr-11 pl-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+            </div>
+            <div class="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+                <select id="filter-priority" onchange="renderTasks()" class="px-3 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="all">כל העדיפויות</option>
+                    <option value="high">🔥 דחופה</option>
+                    <option value="medium">⚡ בינונית</option>
+                    <option value="low">🌱 רגילה</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- לשוניות קטגוריות -->
+        <nav class="flex items-center gap-2 p-1.5 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl shadow-inner overflow-x-auto snap-x no-scrollbar">
+            <button onclick="setActiveTab('daily')" id="tab-daily" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 shadow-sm text-brand-600 dark:text-gold-400 font-bold border border-slate-200/50 dark:border-slate-600/50 whitespace-nowrap">
+                <span>☀️</span> יומי
+                <span id="badge-daily" class="text-[10px] px-2 py-0.5 rounded-full bg-brand-50 dark:bg-slate-800 text-brand-700 dark:text-gold-400 font-bold shadow-sm">0</span>
+            </button>
+            <button onclick="setActiveTab('weekly')" id="tab-weekly" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap">
+                <span>📅</span> שבועי
+                <span id="badge-weekly" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors">0</span>
+            </button>
+            <button onclick="setActiveTab('monthly')" id="tab-monthly" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap">
+                <span>🗓️</span> חודשי
+                <span id="badge-monthly" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors">0</span>
+            </button>
+            <button onclick="setActiveTab('general')" id="tab-general" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap">
+                <span>💡</span> כללי
+                <span id="badge-general" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors">0</span>
+            </button>
+            <button onclick="setActiveTab('completed')" id="tab-completed" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap">
+                <span>✅</span> הושלמו
+                <span id="badge-completed" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors">0</span>
+            </button>
+        </nav>
+
+        <!-- רשימת משימות -->
+        <section class="flex-1 flex flex-col gap-3 min-h-[300px]" id="tasks-container">
+            <!-- כרטיסי משימות -->
+        </section>
+
+    </main>
+
+    <!-- שורת קרדיט תחתונה -->
+    <footer class="w-full max-w-4xl mx-auto px-4 py-4 mt-auto text-center border-t border-slate-200/80 dark:border-slate-800/80">
+        <a href="http://birkat-hanasi.co.il/" target="_blank" rel="noopener noreferrer" 
+           class="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 hover:border-gold-500 dark:hover:border-gold-400 shadow-sm hover:shadow-md transition-all group">
+            <img src="67014.png" alt="ברכת הנשיא" class="w-8 h-8 rounded-full bg-white object-contain p-0.5 shadow-sm group-hover:scale-110 transition-transform duration-300">
+            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">
+                פותח באהבה על ידי - <span class="font-bold text-slate-800 dark:text-white underline decoration-gold-500 group-hover:text-gold-600 dark:group-hover:text-gold-400 transition-colors">ברכת הנשיא</span>
+            </span>
+        </a>
+    </footer>
+
+    <!-- כפתורי פעולה (FAB) -->
+    <div class="fixed bottom-6 left-6 z-40 flex items-center gap-3">
+        <button onclick="quickOpenPhotoModal()" title="צלם משימה חדשה" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:scale-105 active:scale-95 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </button>
+        <button onclick="quickOpenAudioModal()" title="הקלט משימה קולית" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:scale-105 active:scale-95 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+        </button>
+        <button onclick="openTaskModal()" title="הוסף משימה" class="h-14 px-6 rounded-full bg-gradient-to-r from-brand-600 to-gold-500 hover:from-brand-700 hover:to-gold-600 text-white shadow-xl shadow-brand-600/30 flex items-center gap-2 font-bold text-base hover:scale-105 active:scale-95 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+            <span>משימה חדשה</span>
+        </button>
+    </div>
+
+    <!-- מודאל: הוספה / עריכת משימה -->
+    <div id="task-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden max-h-[94vh] flex flex-col animate-in fade-in slide-in-from-bottom duration-200">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="modal-task-heading">משימה חדשה</h3>
+                <button type="button" onclick="closeTaskModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <form id="task-form" onsubmit="handleSaveTask(event)" class="p-6 overflow-y-auto flex-1 flex flex-col gap-4">
+                <input type="hidden" id="task-id">
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">מה המשימה?</label>
+                        <span id="speech-indicator-tag" class="hidden text-[11px] font-bold text-rose-500 animate-pulse flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span> מקשיב כעת...
+                        </span>
+                    </div>
+                    <div class="relative flex items-center">
+                        <input type="text" id="task-title" required placeholder="למשל: ישיבת צוות..." 
+                            class="w-full pr-4 pl-12 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-sm transition">
+                        <button type="button" id="btn-toggle-speech" onclick="toggleSpeechRecognition('task-title')" title="לחץ להכתבה קולית או לעצירה" 
+                            class="absolute left-2 p-2 rounded-xl text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <svg id="speech-icon-title" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">הערות ופרטים נוספים</label>
+                    <textarea id="task-desc" rows="2" placeholder="הוסף פרטים..." class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">סוג המשימה</label>
+                        <select id="task-category" onchange="updateFormForCategory()" class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="daily">☀️ יומית (מחזורית)</option>
+                            <option value="weekly">📅 שבועית (מחזורית)</option>
+                            <option value="monthly">🗓️ חודשית (מחזורית)</option>
+                            <option value="general">💡 כללית (חד פעמית)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">עדיפות</label>
+                        <select id="task-priority" class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="medium">⚡ בינונית</option>
+                            <option value="high">🔥 דחופה</option>
+                            <option value="low">🌱 רגילה</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- תאריך והתראה דינאמי לפי סוג המשימה -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label id="date-label" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">מתי?</label>
+                        
+                        <!-- יומי -->
+                        <div id="input-daily" class="text-sm py-2.5 px-3 bg-brand-50/50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 rounded-2xl font-bold flex items-center justify-center border border-brand-100 dark:border-brand-800">
+                            🔄 בכל יום
+                        </div>
+                        
+                        <!-- שבועי -->
+                        <select id="input-weekly" class="hidden w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold">
+                            <option value="0">יום ראשון</option>
+                            <option value="1">יום שני</option>
+                            <option value="2">יום שלישי</option>
+                            <option value="3">יום רביעי</option>
+                            <option value="4">יום חמישי</option>
+                            <option value="5">יום שישי</option>
+                            <option value="6">יום שבת</option>
+                        </select>
+
+                        <!-- חודשי -->
+                        <select id="input-monthly" class="hidden w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold">
+                            <script>
+                                for(let i=1; i<=31; i++) {
+                                    document.write(`<option value="${i}">${i} בחודש</option>`);
+                                }
+                            </script>
+                        </select>
+
+                        <!-- כללי (תאריך רגיל) -->
+                        <input type="date" id="input-general" class="hidden w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                            שעת התראה 🔔
+                        </label>
+                        <input type="time" id="task-due-time" class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-brand-600 dark:text-gold-400">
+                    </div>
+                </div>
+
+                <!-- אזור מולטימדיה -->
+                <div class="border-t border-slate-100 dark:border-slate-700 pt-3">
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">מדיה מצורפת</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-2">
+                            <div class="flex items-center gap-2" id="record-controls">
+                                <button type="button" id="btn-record-audio" onclick="toggleAudioRecording()" title="הקלט ישירות בדפדפן" class="p-3 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition shadow-sm">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                </button>
+                                <label for="native-audio-file-input" title="הקלטה ברשמקול המכשיר (עובד תמיד)" class="cursor-pointer p-3 rounded-full bg-gold-50 dark:bg-gold-950/40 text-gold-600 dark:text-gold-400 hover:bg-gold-100 transition shadow-sm">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13zM12 14a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+                                </label>
+                                <input type="file" id="native-audio-file-input" accept="audio/*" capture="microphone" class="hidden" onchange="handleNativeAudioUpload(event)">
+                            </div>
+                            <span id="record-status" class="text-[11px] font-medium text-slate-500">הקלטה חיה או ברשמקול המכשיר</span>
+                            <div id="audio-preview-box" class="w-full hidden mt-1 flex flex-col gap-1 items-center">
+                                <audio id="audio-preview-element" controls class="w-full h-8"></audio>
+                                <button type="button" onclick="removeAudioRecording()" class="text-[10px] text-rose-500 hover:underline">מחק הקלטה</button>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-2 relative">
+                            <label for="camera-file-input" class="cursor-pointer p-3 rounded-full bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 hover:bg-brand-100 transition shadow-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            </label>
+                            <input type="file" id="camera-file-input" accept="image/*" class="hidden" onchange="handleImageSelection(event)">
+                            <span id="photo-status" class="text-[11px] font-medium text-slate-500">צלם או העלה תמונה</span>
+                            <div id="image-preview-box" class="hidden relative mt-1">
+                                <img id="image-preview-element" class="w-14 h-14 object-cover rounded-xl border border-slate-300 dark:border-slate-600">
+                                <button type="button" onclick="removeAttachedImage()" class="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow hover:bg-rose-600">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-3">
+                    <button type="button" onclick="closeTaskModal()" class="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition">ביטול</button>
+                    <button type="submit" class="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md shadow-brand-500/30 transition">שמור משימה</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- מודאל פופאפ התראה (Alarm) -->
+    <div id="alarm-modal" class="fixed inset-0 z-[100] bg-brand-900/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border-2 border-brand-500 dark:border-gold-500 flex flex-col items-center text-center gap-4 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-gold-400/20 blur-2xl rounded-full pointer-events-none"></div>
+            
+            <div class="w-20 h-20 rounded-full bg-brand-100 dark:bg-slate-700 flex items-center justify-center text-brand-600 dark:text-gold-400 mb-1 bell-ring shadow-inner">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+            </div>
+            
+            <h2 class="text-2xl font-black text-slate-800 dark:text-white" id="alarm-title">תזכורת למשימה!</h2>
+            <p class="text-slate-500 dark:text-slate-300 text-sm font-medium px-2" id="alarm-desc">הגיע הזמן לבצע את המשימה</p>
+            
+            <div class="flex flex-col gap-3 w-full mt-4 z-10">
+                <button onclick="handleAlarmAction('complete')" class="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                    סמן כהושלם
+                </button>
+                <button onclick="handleAlarmAction('snooze')" class="w-full py-3.5 rounded-2xl bg-gold-500 hover:bg-gold-600 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                    <span class="text-lg">💤</span> נודניק (עוד 10 דקות)
+                </button>
+                <button onclick="handleAlarmAction('dismiss')" class="w-full py-3 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm transition-all hover:bg-slate-200 dark:hover:bg-slate-600">
+                    סגור התראה
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- מודאל: הצגת תמונה -->
+    <div id="lightbox-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4" onclick="closeLightbox()">
+        <div class="relative max-w-2xl w-full" onclick="event.stopPropagation()">
+            <button onclick="closeLightbox()" class="absolute -top-10 left-0 text-white p-2 hover:opacity-80">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <img id="lightbox-image" class="w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl">
+        </div>
+    </div>
+
+    <!-- מודאל: גיבוי ושחזור -->
+    <div id="backup-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-700 flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">גיבוי וניהול נתונים</h3>
+                <button onclick="toggleModal('backup-modal')" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                כל המשימות, ההקלטות והתמונות נשמרות מקומית ומאובטחת על מכשיר זה. תוכל לייצא קובץ גיבוי או לשחזר נתונים.
+            </p>
+            <div class="flex flex-col gap-2.5">
+                <button onclick="exportDataToFile()" class="w-full py-3 px-4 rounded-2xl bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300 font-semibold text-xs flex items-center justify-center gap-2 hover:bg-brand-100 transition">
+                    ייצוא קובץ גיבוי מלא (JSON)
+                </button>
+                <label class="w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-200 transition">
+                    שחזור נתונים מקובץ גיבוי
+                    <input type="file" accept=".json" class="hidden" onchange="importDataFromFile(event)">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- הודעת טוסט (Toast) -->
+    <div id="toast" class="fixed bottom-20 sm:bottom-6 right-1/2 translate-x-1/2 z-50 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-5 py-2.5 rounded-full text-xs font-semibold shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 whitespace-nowrap">
+        <span id="toast-icon">✨</span>
+        <span id="toast-message">הודעה</span>
+    </div>
+
+    <!-- קנבס לקונפטי -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[60]"></canvas>
+
+    <script>
+        /* --- משתנים גלובליים --- */
+        let db = null;
+        let tasks = [];
+        let activeTab = 'daily';
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedAudioBlob = null;
+        let attachedImageBase64 = null;
+        let isRecording = false;
+        let recordTimerInterval = null;
+        let recordSeconds = 0;
+        let activeAudioStream = null;
+        
+        let recognitionInstance = null;
+        let isTranscribing = false;
+        let speechTimeout = null;
+
+        let audioCtx = null;
+        let alarmIntervalId = null;
+        let activeAlarmTask = null;
+        let alarmCheckTimer = null;
+        let audioContextUnlocked = false;
+
+        const DB_NAME = 'TazkirLiAppDB';
+        const DB_VERSION = 2; // עודכן גרסה למבנה החדש
+        const STORE_NAME = 'tasks';
+
+        const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+        /* --- מסד נתונים --- */
+        function initDB() {
+            return new Promise((resolve) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onerror = (e) => { console.error('IndexedDB error', e); resolve(null); };
+            });
+        }
+
+        async function loadTasks() {
+            if (!db) return;
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    tasks = request.result || [];
+                    sortTasks(); renderTasks(); updateProgressWidget();
+                    resolve(tasks);
+                };
+            });
+        }
+
+        async function saveTaskToDB(task) {
+            if (!db) return;
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                transaction.objectStore(STORE_NAME).put(task);
+                transaction.oncomplete = () => resolve(true);
+            });
+        }
+
+        async function deleteTaskFromDB(id) {
+            if (!db) return;
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                transaction.objectStore(STORE_NAME).delete(id);
+                transaction.oncomplete = () => resolve(true);
+            });
+        }
+
+        /* --- התראות וסאונד --- */
+        function initAudioContext() {
+            if (audioContextUnlocked) return;
+            try {
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!audioCtx) audioCtx = new AudioContext();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                audioContextUnlocked = true;
+            } catch (e) {}
+        }
+
+        function playAlarmSound() {
+            initAudioContext();
+            if (!audioCtx) return;
+            const playBeep = () => {
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+                } catch(e){}
+            };
+            playBeep(); setTimeout(playBeep, 200);
+            alarmIntervalId = setInterval(() => { playBeep(); setTimeout(playBeep, 200); }, 1500);
+        }
+
+        function stopAlarmSound() {
+            if (alarmIntervalId) { clearInterval(alarmIntervalId); alarmIntervalId = null; }
+        }
+
+        function checkAlarms() {
+            if (activeAlarmTask) return;
+            const now = new Date();
+            const todayStr = getTodayDateString(now);
+            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+            for (let t of tasks) {
+                if (!t.completed && !t.notified && t.dueDate === todayStr && t.dueTime === timeStr) {
+                    triggerAlarmPopup(t);
+                    break;
+                }
+            }
+        }
+
+        function triggerAlarmPopup(task) {
+            activeAlarmTask = task;
+            document.getElementById('alarm-title').textContent = escapeHtml(task.title);
+            document.getElementById('alarm-desc').textContent = task.desc ? escapeHtml(task.desc) : 'הגיע הזמן לבצע את המשימה!';
+            document.getElementById('alarm-modal').classList.remove('hidden');
+            playAlarmSound();
+        }
+
+        async function handleAlarmAction(action) {
+            stopAlarmSound();
+            document.getElementById('alarm-modal').classList.add('hidden');
+            if (!activeAlarmTask) return;
+            
+            const t = activeAlarmTask;
+            activeAlarmTask = null;
+
+            if (action === 'complete') {
+                await toggleTaskCompletion(t.id); // משתמש בפונקציה המרכזית שגם מייצרת את המשימה הבאה
+            } else if (action === 'dismiss') {
+                t.notified = true; 
+                await saveTaskToDB(t);
+            } else if (action === 'snooze') {
+                t.notified = false;
+                let [h, m] = t.dueTime.split(':').map(Number);
+                m += 10;
+                if (m >= 60) { h += 1; m -= 60; }
+                if (h >= 24) { h -= 24; }
+                t.dueTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                await saveTaskToDB(t);
+                showToast(`נודניק - נזכיר לך ב-${t.dueTime}`, '💤');
+            }
+            sortTasks(); renderTasks(); updateProgressWidget();
+        }
+
+        /* --- אתחול אפליקציה --- */
+        window.addEventListener('DOMContentLoaded', async () => {
+            initDateHeader();
+            initDarkMode();
+            await initDB();
+            await loadTasks();
+            updateFormForCategory();
+            alarmCheckTimer = setInterval(checkAlarms, 10000);
+        });
+
+        /* --- עזרים לחישוב תאריכים ומחזוריות --- */
+        function getTodayDateString(dateObj = new Date()) {
+            const y = dateObj.getFullYear(), m = String(dateObj.getMonth() + 1).padStart(2, '0'), d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // פונקציה לחישוב תאריך היעד הבא בהתאם לסוג המחזוריות
+        function calculateNextDueDate(category, recurringValue, timeStr, baseDateObj = new Date()) {
+            let date = new Date(baseDateObj);
+            const now = new Date();
+
+            let timePassedToday = false;
+            if (timeStr) {
+                const [h, min] = timeStr.split(':').map(Number);
+                const taskTimeToday = new Date(date);
+                taskTimeToday.setHours(h, min, 0, 0);
+                if (taskTimeToday <= now) timePassedToday = true;
+            }
+
+            if (category === 'daily') {
+                if (timePassedToday && date.toDateString() === now.toDateString()) {
+                    date.setDate(date.getDate() + 1); // למחר
+                }
+                return getTodayDateString(date);
+            }
+
+            if (category === 'weekly') {
+                const targetDay = parseInt(recurringValue); // 0 עד 6
+                let daysToAdd = (targetDay - date.getDay() + 7) % 7;
+                if (daysToAdd === 0 && timePassedToday && date.toDateString() === now.toDateString()) {
+                    daysToAdd = 7; // שבוע הבא
+                }
+                date.setDate(date.getDate() + daysToAdd);
+                return getTodayDateString(date);
+            }
+
+            if (category === 'monthly') {
+                const targetDate = parseInt(recurringValue); // 1 עד 31
+                let nextMonthDate = new Date(date.getFullYear(), date.getMonth(), targetDate);
+                
+                // טיפול בחודשים קצרים (למשל 31 בפברואר)
+                if (nextMonthDate.getMonth() !== date.getMonth() && targetDate > 28) {
+                    nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+                }
+
+                if (nextMonthDate < now || (nextMonthDate.toDateString() === now.toDateString() && timePassedToday)) {
+                    nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 1, targetDate);
+                    if (nextMonthDate.getMonth() !== (date.getMonth() + 1) % 12) {
+                        nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+                    }
+                }
+                return getTodayDateString(nextMonthDate);
+            }
+
+            // כללי (חד פעמי)
+            return recurringValue; // מחזיר את תאריך ה-YYYY-MM-DD השמור
+        }
+
+        /* --- עדכון טופס משימה בהתאם לסוג --- */
+        function updateFormForCategory() {
+            const cat = document.getElementById('task-category').value;
+            const label = document.getElementById('date-label');
+            const inDaily = document.getElementById('input-daily');
+            const inWeekly = document.getElementById('input-weekly');
+            const inMonthly = document.getElementById('input-monthly');
+            const inGeneral = document.getElementById('input-general');
+
+            inDaily.classList.add('hidden');
+            inWeekly.classList.add('hidden');
+            inMonthly.classList.add('hidden');
+            inGeneral.classList.add('hidden');
+
+            if (cat === 'daily') {
+                label.textContent = 'תדירות';
+                inDaily.classList.remove('hidden');
+            } else if (cat === 'weekly') {
+                label.textContent = 'באיזה יום בשבוע?';
+                inWeekly.classList.remove('hidden');
+                // ברירת מחדל היום
+                inWeekly.value = new Date().getDay(); 
+            } else if (cat === 'monthly') {
+                label.textContent = 'באיזה תאריך בחודש?';
+                inMonthly.classList.remove('hidden');
+                inMonthly.value = new Date().getDate();
+            } else if (cat === 'general') {
+                label.textContent = 'תאריך יעד';
+                inGeneral.classList.remove('hidden');
+                inGeneral.value = getTodayDateString();
+            }
+        }
+
+        /* --- שמירה ויצירת משימה --- */
+        async function handleSaveTask(e) {
+            e.preventDefault();
+            const id = document.getElementById('task-id').value || 'task_' + Date.now();
+            const title = document.getElementById('task-title').value.trim();
+            const desc = document.getElementById('task-desc').value.trim();
+            const category = document.getElementById('task-category').value;
+            const priority = document.getElementById('task-priority').value;
+            const dueTime = document.getElementById('task-due-time').value;
+            
+            if (!title) return;
+
+            // חילוץ ערך המחזוריות לפי שדה הקלט הפעיל
+            let recurringValue = '';
+            if (category === 'weekly') recurringValue = document.getElementById('input-weekly').value;
+            else if (category === 'monthly') recurringValue = document.getElementById('input-monthly').value;
+            else if (category === 'general') recurringValue = document.getElementById('input-general').value;
+            // daily לא צריך value מיוחד
+
+            // חישוב תאריך היעד הבא בפועל (כדי שנדע מתי להקפיץ)
+            const dueDate = calculateNextDueDate(category, recurringValue, dueTime, new Date());
+
+            const existingIndex = tasks.findIndex(t => t.id === id);
+            const isCompleted = existingIndex > -1 ? tasks[existingIndex].completed : false;
+
+            const taskData = {
+                id, title, desc, category, priority, 
+                recurringValue, // שומרים את הגדרת המחזוריות המקורית
+                dueDate, dueTime,
+                image: attachedImageBase64 || (existingIndex > -1 ? tasks[existingIndex].image : null),
+                audio: (typeof recordedAudioBlob === 'string') ? recordedAudioBlob : (existingIndex > -1 ? tasks[existingIndex].audio : null),
+                completed: isCompleted,
+                notified: false,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (recordedAudioBlob instanceof Blob) taskData.audio = await blobToBase64(recordedAudioBlob);
+
+            if (existingIndex > -1) { tasks[existingIndex] = taskData; showToast('המשימה עודכנה'); }
+            else { tasks.push(taskData); showToast('משימה חדשה נוספה!'); }
+
+            await saveTaskToDB(taskData);
+            sortTasks();
+            if (!isCompleted && activeTab !== category && activeTab !== 'completed') setActiveTab(category);
+            else { renderTasks(); updateProgressWidget(); }
+            closeTaskModal();
+        }
+
+        /* --- השלמת משימה ושכפול מחזורי --- */
+        async function toggleTaskCompletion(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            const wasCompleted = task.completed;
+            task.completed = !task.completed;
+            task.completedAt = task.completed ? new Date().toISOString() : null;
+
+            if (task.completed) {
+                // מסמן כהושלמה
+                task.notified = true;
+                playCompletionBeep();
+                showToast('משימה הושלמה! ✅');
+                checkIfAllDailyCompleted();
+
+                // יצירת עותק עתידי אם המשימה מחזורית
+                if (task.category !== 'general') {
+                    // חשב את התאריך הבא ביחס ל-עכשיו (כדי לא לצבור פיגורים אם שכחנו לסמן)
+                    const nextDueDate = calculateNextDueDate(task.category, task.recurringValue, task.dueTime, new Date());
+                    
+                    const cloneId = 'task_' + Date.now() + Math.floor(Math.random()*1000);
+                    const cloneTask = { ...task, id: cloneId, completed: false, completedAt: null, dueDate: nextDueDate, notified: false };
+                    
+                    task.nextInstanceId = cloneId; // שומרים רפרנס למקרה של ביטול
+                    tasks.push(cloneTask);
+                    await saveTaskToDB(cloneTask);
+                }
+            } else {
+                // ביטול השלמה
+                task.notified = false;
+                // אם נוצר עותק מחזורי, נמחק אותו
+                if (task.nextInstanceId) {
+                    const cloneIdx = tasks.findIndex(t => t.id === task.nextInstanceId);
+                    if (cloneIdx > -1) {
+                        await deleteTaskFromDB(task.nextInstanceId);
+                        tasks.splice(cloneIdx, 1);
+                    }
+                    delete task.nextInstanceId;
+                }
+            }
+
+            await saveTaskToDB(task);
+            sortTasks(); renderTasks(); updateProgressWidget();
+        }
+
+
+        /* --- רינדור ממשק (UI) --- */
+        function sortTasks() {
+            tasks.sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                const dateA = a.dueDate ? new Date(`${a.dueDate}T${a.dueTime || '00:00'}`) : new Date(8640000000000000);
+                const dateB = b.dueDate ? new Date(`${b.dueDate}T${b.dueTime || '00:00'}`) : new Date(8640000000000000);
+                return dateA - dateB;
+            });
+        }
+
+        function getRecurrenceBadgeString(task) {
+            if (task.category === 'daily') return '🔄 מחזורי: כל יום';
+            if (task.category === 'weekly') return `🔄 מחזורי: כל יום ${DAY_NAMES[parseInt(task.recurringValue)]}`;
+            if (task.category === 'monthly') return `🔄 מחזורי: ב-${task.recurringValue} לחודש`;
+            return 'חד פעמי';
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasks-container');
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+            const priorityFilter = document.getElementById('filter-priority').value;
+            
+            let counts = { daily: 0, weekly: 0, monthly: 0, general: 0, completed: 0 };
+            tasks.forEach(t => {
+                if (t.completed) counts.completed++;
+                else counts[t.category || 'daily'] = (counts[t.category || 'daily'] || 0) + 1;
+            });
+
+            ['daily', 'weekly', 'monthly', 'general', 'completed'].forEach(cat => {
+                document.getElementById(`badge-${cat}`).textContent = counts[cat];
+            });
+
+            const filtered = tasks.filter(task => {
+                if (activeTab === 'completed' && !task.completed) return false;
+                if (activeTab !== 'completed' && (task.completed || (task.category || 'daily') !== activeTab)) return false;
+                if (searchVal && !((task.title && task.title.toLowerCase().includes(searchVal)) || (task.desc && task.desc.toLowerCase().includes(searchVal)))) return false;
+                if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-800/60 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 my-auto"><div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center text-3xl mb-3">📝</div><h4 class="font-bold text-base text-slate-700 dark:text-slate-300">אין משימות להצגה</h4></div>`;
+                return;
+            }
+            container.innerHTML = filtered.map(task => renderTaskCard(task)).join('');
+        }
+
+        function renderTaskCard(task) {
+            const todayStr = getTodayDateString();
+            const isOverdue = task.dueDate && task.dueDate < todayStr && !task.completed;
+            const isToday = task.dueDate === todayStr;
+
+            let priorityBadge = task.priority === 'high' ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">דחוף 🔥</span>` :
+                                task.priority === 'medium' ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/60 dark:text-gold-300">בינוני ⚡</span>` :
+                                `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">רגיל 🌱</span>`;
+
+            let dueDisplay = '';
+            if (task.dueDate) {
+                const parts = task.dueDate.split('-');
+                const formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                const time = task.dueTime ? ` | 🔔 ${task.dueTime}` : '';
+                
+                if (isOverdue) dueDisplay = `<span class="text-rose-600 dark:text-rose-400 font-bold">⚠️ באיחור: ${formatted}${time}</span>`;
+                else if (isToday) dueDisplay = `<span class="text-brand-600 dark:text-brand-400 font-bold">⏰ להיום${time}</span>`;
+                else dueDisplay = `<span class="text-slate-500 font-medium">📅 ${formatted}${time}</span>`;
+            }
+
+            const recrText = task.category !== 'general' ? `<span class="text-[10px] text-brand-600 dark:text-gold-400 font-semibold bg-brand-50 dark:bg-slate-700 px-2 py-0.5 rounded-md">${getRecurrenceBadgeString(task)}</span>` : '';
+
+            return `
+                <div class="group bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-200/80 dark:border-slate-700/80 transition-all flex flex-col gap-3 relative ${task.completed ? 'opacity-70 bg-slate-50 dark:bg-slate-800/40' : ''}">
+                    <div class="flex items-start gap-3">
+                        <button onclick="toggleTaskCompletion('${task.id}')" class="mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 hover:border-brand-500'}">
+                            ${task.completed ? `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : ''}
+                        </button>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                                ${priorityBadge}
+                                ${recrText}
+                                <span class="text-[11px]">${dueDisplay}</span>
+                            </div>
+                            <h3 class="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 ${task.completed ? 'task-completed' : ''} break-words">${escapeHtml(task.title)}</h3>
+                            ${task.desc ? `<p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHtml(task.desc)}</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="openEditTaskModal('${task.id}')" title="ערוך משימה" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                            <button onclick="confirmDeleteTask('${task.id}')" title="מחק משימה" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>
+                    </div>
+                    ${(task.audio || task.image) ? `
+                        <div class="flex items-center gap-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 mt-1">
+                            ${task.image ? `<img src="${task.image}" onclick="openLightbox('${task.image}')" class="w-16 h-16 object-cover rounded-xl border border-slate-200 cursor-pointer">` : ''}
+                            ${task.audio ? `<div class="flex-1 bg-slate-50 dark:bg-slate-900/80 p-2 rounded-xl border flex items-center gap-2"><span class="text-xs">🎙️</span><audio controls src="${task.audio}" class="w-full h-8 outline-none"></audio></div>` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        /* --- מודאל עריכה ושאר ירקות --- */
+        function openEditTaskModal(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+            resetSpeechUI();
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('modal-task-heading').textContent = 'עריכת משימה';
+            document.getElementById('task-title').value = task.title;
+            document.getElementById('task-desc').value = task.desc || '';
+            document.getElementById('task-category').value = task.category || 'daily';
+            document.getElementById('task-priority').value = task.priority || 'medium';
+            document.getElementById('task-due-time').value = task.dueTime || '';
+
+            // טעינת הגדרות התאריך לממשק
+            updateFormForCategory();
+            if(task.category === 'weekly') document.getElementById('input-weekly').value = task.recurringValue;
+            if(task.category === 'monthly') document.getElementById('input-monthly').value = task.recurringValue;
+            if(task.category === 'general') document.getElementById('input-general').value = task.recurringValue || task.dueDate;
+
+            attachedImageBase64 = task.image || null;
+            if (task.image) {
+                document.getElementById('image-preview-element').src = task.image;
+                document.getElementById('image-preview-box').classList.remove('hidden');
+            } else document.getElementById('image-preview-box').classList.add('hidden');
+
+            recordedAudioBlob = task.audio || null;
+            if (task.audio) {
+                document.getElementById('audio-preview-element').src = task.audio;
+                document.getElementById('audio-preview-box').classList.remove('hidden');
+            } else document.getElementById('audio-preview-box').classList.add('hidden');
+
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        // --- שאר הפונקציות לא השתנו (מולטימדיה, גיבוי, תצוגה) ---
+        function initDateHeader() { document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' }); }
+        function initDarkMode() { if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); document.getElementById('theme-icon-dark').classList.remove('hidden'); document.getElementById('theme-icon-light').classList.add('hidden'); } }
+        function toggleDarkMode() { const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', isDark ? 'dark' : 'light'); document.getElementById('theme-icon-dark').classList.toggle('hidden', !isDark); document.getElementById('theme-icon-light').classList.toggle('hidden', isDark); }
+        function setActiveTab(tab) {
+            activeTab = tab;
+            ['daily', 'weekly', 'monthly', 'general', 'completed'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const badge = document.getElementById(`badge-${t}`);
+                if (t === tab) {
+                    btn.className = 'snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 shadow-sm text-brand-600 dark:text-gold-400 font-bold border border-slate-200/50 dark:border-slate-600/50 whitespace-nowrap';
+                    badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-brand-50 dark:bg-slate-800 text-brand-700 dark:text-gold-400 font-bold shadow-sm';
+                } else {
+                    btn.className = 'snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap';
+                    badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors';
+                }
+            });
+            document.getElementById('daily-progress-widget').classList.toggle('hidden', tab !== 'daily');
+            renderTasks();
+        }
+        function escapeHtml(str) { return !str ? '' : str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+        function updateProgressWidget() {
+            const dailyTasks = tasks.filter(t => (t.category || 'daily') === 'daily');
+            const total = dailyTasks.length, completed = dailyTasks.filter(t => t.completed).length;
+            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+            document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+            document.getElementById('progress-percent').textContent = `${percent}%`;
+            document.getElementById('progress-subtitle').textContent = `${completed} מתוך ${total} משימות יומיות הושלמו`;
+            document.getElementById('progress-title').textContent = (total > 0 && completed === total) ? 'כל הכבוד! סיימת הכל! 🚀' : (completed > 0 ? 'קצב מעולה! ממשיכים' : 'היום שלך מתחיל כאן');
+        }
+        function playCompletionBeep() {
+            initAudioContext(); if(!audioCtx) return;
+            try { const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.25); } catch (e) {}
+        }
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas'), ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const pieces = [], colors = ['#1b4965', '#d4af37', '#b5952f', '#2c698d', '#fdf9ee'];
+            for (let i=0; i<70; i++) pieces.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height-canvas.height, color:colors[Math.floor(Math.random()*colors.length)], size:Math.random()*8+4, speed:Math.random()*4+2, angle:Math.random()*360, spin:Math.random()*8-4});
+            let frames = 0;
+            function animate() {
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                pieces.forEach(p => { p.y+=p.speed; p.angle+=p.spin; ctx.fillStyle=p.color; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.angle*Math.PI/180); ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size); ctx.restore(); });
+                if (++frames<120) requestAnimationFrame(animate); else ctx.clearRect(0,0,canvas.width,canvas.height);
+            } animate();
+        }
+        function openTaskModal() {
+            document.getElementById('task-form').reset();
+            document.getElementById('task-id').value = '';
+            document.getElementById('modal-task-heading').textContent = 'משימה חדשה';
+            resetSpeechUI(); attachedImageBase64 = null; recordedAudioBlob = null;
+            document.getElementById('image-preview-box').classList.add('hidden');
+            document.getElementById('audio-preview-box').classList.add('hidden');
+            document.getElementById('audio-preview-element').src = '';
+            
+            const defaultCat = (activeTab === 'completed' ? 'daily' : activeTab);
+            document.getElementById('task-category').value = defaultCat;
+            updateFormForCategory();
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+        function closeTaskModal() { if (isRecording) stopAudioRecording(); if (isTranscribing) stopSpeechRecognition(); document.getElementById('task-modal').classList.add('hidden'); }
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function quickOpenPhotoModal() { openTaskModal(); setTimeout(() => document.getElementById('camera-file-input').click(), 200); }
+        function quickOpenAudioModal() { openTaskModal(); setTimeout(() => toggleAudioRecording(), 250); }
+
+        async function toggleAudioRecording() { isRecording ? stopAudioRecording() : startAudioRecording(); }
+        async function startAudioRecording() {
+            const getUserMedia = navigator.mediaDevices?.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia;
+            if (!getUserMedia || typeof MediaRecorder === 'undefined') { document.getElementById('native-audio-file-input').click(); return; }
+            try {
+                const stream = navigator.mediaDevices ? await navigator.mediaDevices.getUserMedia({audio:true}) : await new Promise((res, rej) => getUserMedia.call(navigator, {audio:true}, res, rej));
+                activeAudioStream = stream; audioChunks = []; mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => { recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' }); document.getElementById('audio-preview-element').src = URL.createObjectURL(recordedAudioBlob); document.getElementById('audio-preview-box').classList.remove('hidden'); if (activeAudioStream) { activeAudioStream.getTracks().forEach(t => t.stop()); activeAudioStream = null; } };
+                mediaRecorder.start(250); isRecording = true; recordSeconds = 0; document.getElementById('btn-record-audio').classList.add('pulse-recording', 'bg-rose-600', 'text-white');
+                recordTimerInterval = setInterval(() => { recordSeconds++; document.getElementById('record-status').textContent = `מקליט כעת... (${String(Math.floor(recordSeconds/60)).padStart(2,'0')}:${String(recordSeconds%60).padStart(2,'0')})`; }, 1000);
+            } catch (err) { setTimeout(() => document.getElementById('native-audio-file-input').click(), 400); }
+        }
+        function stopAudioRecording() { if (!isRecording) return; isRecording = false; clearInterval(recordTimerInterval); document.getElementById('btn-record-audio').classList.remove('pulse-recording', 'bg-rose-600', 'text-white'); document.getElementById('record-status').textContent = 'הקלטה נשמרה!'; if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
+        function handleNativeAudioUpload(e) { const file = e.target.files[0]; if (!file) return; recordedAudioBlob = file; document.getElementById('audio-preview-element').src = URL.createObjectURL(file); document.getElementById('audio-preview-box').classList.remove('hidden'); showToast('ההקלטה נקלטה!'); }
+        function removeAudioRecording() { recordedAudioBlob = null; document.getElementById('audio-preview-element').src = ''; document.getElementById('audio-preview-box').classList.add('hidden'); }
+        function toggleSpeechRecognition(targetId) {
+            if (isTranscribing) { stopSpeechRecognition(); return; }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; const input = document.getElementById(targetId);
+            if (!SpeechRecognition) { showToast('הדפדפן אינו תומך בהכתבה.', '⚠️'); return; }
+            try {
+                recognitionInstance = new SpeechRecognition(); recognitionInstance.lang = 'he-IL'; recognitionInstance.interimResults = true;
+                const baseText = input.value ? input.value.trim() + ' ' : ''; let finalSpoken = ''; isTranscribing = true;
+                document.getElementById('speech-icon-title').classList.add('text-rose-600', 'animate-pulse'); document.getElementById('speech-indicator-tag').classList.remove('hidden');
+                speechTimeout = setTimeout(stopSpeechRecognition, 8000);
+                recognitionInstance.onresult = (e) => { clearTimeout(speechTimeout); let interimText = ''; for (let i = e.resultIndex; i < e.results.length; ++i) { if (e.results[i].isFinal) finalSpoken += e.results[i][0].transcript; else interimText += e.results[i][0].transcript; } if ((finalSpoken || interimText).trim()) input.value = baseText + (finalSpoken || interimText).trim(); };
+                recognitionInstance.onerror = () => stopSpeechRecognition(); recognitionInstance.onend = () => stopSpeechRecognition(); recognitionInstance.start();
+            } catch (err) {}
+        }
+        function stopSpeechRecognition() { clearTimeout(speechTimeout); isTranscribing = false; if (recognitionInstance) { try { recognitionInstance.abort(); } catch(e){} } resetSpeechUI(); }
+        function resetSpeechUI() { document.getElementById('speech-icon-title').classList.remove('text-rose-600', 'animate-pulse'); document.getElementById('speech-indicator-tag').classList.add('hidden'); }
+        function handleImageSelection(e) {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = (e) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let width = img.width, height = img.height, maxDim = 800; if (width > height && width > maxDim) { height *= maxDim / width; width = maxDim; } else if (height > maxDim) { width *= maxDim / height; height = maxDim; } canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); attachedImageBase64 = canvas.toDataURL('image/jpeg', 0.8); document.getElementById('image-preview-element').src = attachedImageBase64; document.getElementById('image-preview-box').classList.remove('hidden'); }; img.src = e.target.result; }; reader.readAsDataURL(file);
+        }
+        function removeAttachedImage() { attachedImageBase64 = null; document.getElementById('image-preview-element').src = ''; document.getElementById('image-preview-box').classList.add('hidden'); }
+        function blobToBase64(blob) { return new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); }); }
+        function openLightbox(src) { document.getElementById('lightbox-image').src = src; document.getElementById('lightbox-modal').classList.remove('hidden'); }
+        function closeLightbox() { document.getElementById('lightbox-modal').classList.add('hidden'); }
+        
+        let toastTimeout;
+        function showToast(msg, icon = '✨') {
+            const toast = document.getElementById('toast'); document.getElementById('toast-message').textContent = msg; document.getElementById('toast-icon').textContent = icon;
+            toast.classList.remove('opacity-0', 'pointer-events-none'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none'), 3000);
+        }
+        function exportDataToFile() {
+            if (tasks.length === 0) return; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2)); const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", `TazkirLi_Backup_${getTodayDateString()}.json`); document.body.appendChild(dl); dl.click(); dl.remove();
+        }
+        function importDataFromFile(e) {
+            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = async (e) => { try { const importedTasks = JSON.parse(e.target.result); if (Array.isArray(importedTasks)) { for (const task of importedTasks) if (task.id) await saveTaskToDB(task); await loadTasks(); toggleModal('backup-modal'); showToast('הנתונים שוחזרו בהצלחה!'); } } catch (err) { showToast('קובץ שגוי', '❌'); } }; reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
