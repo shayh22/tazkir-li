@@ -2,45 +2,20 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>תזכיר לי - פשוט להקליט, לצלם ולזכור</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0f4f8',
-                            100: '#d9e4ed',
-                            500: '#2c698d', 
-                            600: '#1b4965',
-                            700: '#133549',
-                            800: '#0c222f',
-                            900: '#07141c',
-                        },
-                        gold: {
-                            50: '#fdf9ee',
-                            100: '#f8efcd',
-                            200: '#f2e09b',
-                            300: '#ebd169',
-                            400: '#e5c237',
-                            500: '#d4af37',
-                            600: '#b5952f',
-                            700: '#947a26',
-                            800: '#75601e',
-                            900: '#5c4b18',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Rubik', 'Noto Sans Hebrew', 'system-ui', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+    <meta name="description" content="תזכיר לי - מנהל משימות ידידותי עם תזכורות קוליות, צילום והתראות">
+    <meta name="theme-color" content="#1b4965" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="תזכיר לי">
+    <!-- Tailwind CSS (נבנה מקומית - עובד גם ללא אינטרנט) -->
+    <link rel="stylesheet" href="tailwind.css">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,24 +25,31 @@
             -webkit-tap-highlight-color: transparent;
             font-family: 'Rubik', system-ui, sans-serif;
         }
+        html { -webkit-text-size-adjust: 100%; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 9999px; }
-        
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+        /* מרווחים בטוחים למכשירים עם מגרעת (notch) */
+        .safe-b { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .pad-nav { padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)); }
+        @media (min-width: 640px) { .pad-nav { padding-bottom: 2rem; } }
+        .fab-pos { bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px)); }
+        @media (min-width: 640px) { .fab-pos { bottom: 1.5rem; } }
+
         .task-completed { text-decoration: line-through; opacity: 0.6; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
         .pulse-recording { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
         @keyframes pulse-ring {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-        .bell-ring {
-            animation: bell 1.5s ease-in-out infinite;
-            transform-origin: top center;
-        }
+        .bell-ring { animation: bell 1.5s ease-in-out infinite; transform-origin: top center; }
         @keyframes bell {
             0%, 70%, 100% { transform: rotate(0); }
             10% { transform: rotate(15deg); }
@@ -77,34 +59,47 @@
             50% { transform: rotate(5deg); }
             60% { transform: rotate(-5deg); }
         }
+        @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .anim-in { animation: fade-up .25s ease-out both; }
+        @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+        .anim-sheet { animation: sheet-up .28s cubic-bezier(.32,.72,0,1) both; }
+        @media (min-width: 640px) { .anim-sheet { animation: fade-up .2s ease-out both; } }
+        @keyframes pop { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+        .anim-pop { animation: pop .22s ease-out both; }
+        @media (prefers-reduced-motion: reduce) {
+            .anim-in, .anim-sheet, .anim-pop, .bell-ring, .pulse-recording { animation: none !important; }
+        }
+        /* מצב "הושלם" - קו מחיקה מונפש */
+        .task-card { transition: opacity .2s ease, transform .2s ease; }
+        .task-card.leaving { opacity: 0; transform: scale(.97); }
+        input[type="time"], input[type="date"] { min-height: 2.75rem; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200 select-none pb-28 sm:pb-8" onclick="initAudioContext()">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200 pad-nav">
 
     <!-- כותרת ראשית -->
-    <header class="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
-        <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="relative w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-slate-200/80 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-800">
+    <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="relative w-11 h-11 shrink-0 rounded-xl overflow-hidden shadow-sm border border-slate-200/80 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-800">
                     <img src="bell.jpg" alt="לוגו תזכיר לי" class="w-full h-full object-contain p-0.5">
                 </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-xl font-black bg-gradient-to-r from-brand-600 to-gold-500 bg-clip-text text-transparent dark:from-brand-400 dark:to-gold-300">
-                            תזכיר לי
-                        </h1>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight">
-                        פשוט להקליט, לצלם ולזכור • <span id="current-date-display">היום</span>
+                <div class="min-w-0">
+                    <h1 class="text-xl font-black bg-gradient-to-r from-brand-600 to-gold-500 bg-clip-text text-transparent dark:from-brand-300 dark:to-gold-300 leading-tight">
+                        תזכיר לי
+                    </h1>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight truncate">
+                        <span id="current-date-display">היום</span>
                     </p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2">
-                <button onclick="toggleModal('backup-modal')" title="גיבוי וייצוא נתונים" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            <div class="flex items-center gap-1">
+                <button onclick="openSettings()" title="הגדרות, התראות וגיבוי" aria-label="הגדרות" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition relative">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span id="settings-dot" class="hidden absolute top-1.5 left-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
                 </button>
-                <button onclick="toggleDarkMode()" title="החלף ערכת נושא" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <button onclick="toggleDarkMode()" title="החלף ערכת נושא" aria-label="החלף ערכת נושא" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg id="theme-icon-dark" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                     <svg id="theme-icon-light" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                 </button>
@@ -115,19 +110,32 @@
     <!-- תוכן מרכזי -->
     <main class="max-w-4xl w-full mx-auto px-4 py-4 flex-1 flex flex-col gap-4">
 
+        <!-- באנר הפעלת התראות -->
+        <section id="notif-banner" class="hidden rounded-2xl bg-gold-50 dark:bg-gold-900/25 border border-gold-200 dark:border-gold-800 p-3.5 flex items-start gap-3 anim-in">
+            <span class="text-xl leading-none mt-0.5">🔔</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-slate-800 dark:text-gold-100">להפעיל תזכורות?</p>
+                <p class="text-[11px] text-slate-600 dark:text-gold-200/80 mt-0.5 leading-relaxed">כדי שנוכל להזכיר לך גם כשהאפליקציה ברקע והמסך כבוי.</p>
+                <div class="flex gap-2 mt-2">
+                    <button onclick="enableNotifications()" class="px-3 py-1.5 rounded-xl bg-brand-600 text-white text-[11px] font-bold hover:bg-brand-700 transition">אפשר התראות</button>
+                    <button onclick="dismissNotifBanner()" class="px-3 py-1.5 rounded-xl bg-white/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-semibold hover:bg-white transition">לא עכשיו</button>
+                </div>
+            </div>
+        </section>
+
         <!-- ווידג'ט התקדמות יומית -->
         <section id="daily-progress-widget" class="bg-gradient-to-br from-brand-700 via-brand-600 to-gold-500 rounded-3xl p-5 text-white shadow-lg shadow-brand-700/15 relative overflow-hidden transition-all">
             <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
+                <div class="min-w-0">
                     <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-medium mb-2 text-gold-50">
-                        <span>🎯</span> התקדמות יומית
+                        <span>🎯</span> ההתקדמות שלך היום
                     </div>
                     <h2 class="text-xl font-bold text-white" id="progress-title">היום שלך מתחיל כאן</h2>
                     <p class="text-xs text-brand-100 mt-0.5" id="progress-subtitle">0 מתוך 0 משימות הושלמו</p>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="w-full sm:w-48 bg-white/20 h-3 rounded-full overflow-hidden p-0.5 backdrop-blur-sm">
-                        <div id="progress-bar-fill" class="bg-gold-400 h-full rounded-full transition-all duration-500 w-0"></div>
+                        <div id="progress-bar-fill" class="bg-gold-300 h-full rounded-full transition-all duration-500" style="width:0%"></div>
                     </div>
                     <span id="progress-percent" class="font-extrabold text-lg sm:text-2xl min-w-[3rem] text-left text-gold-200">0%</span>
                 </div>
@@ -136,58 +144,41 @@
         </section>
 
         <!-- סרגל חיפוש וסינון -->
-        <section class="flex flex-col sm:flex-row gap-2">
+        <section class="flex gap-2">
             <div class="relative flex-1">
-                <svg class="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
-                <input type="text" id="search-input" oninput="renderTasks()" placeholder="חיפוש משימה..." 
+                <input type="search" id="search-input" oninput="renderTasks()" placeholder="חיפוש משימה..." aria-label="חיפוש משימה"
                     class="w-full pr-11 pl-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
             </div>
-            <div class="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-                <select id="filter-priority" onchange="renderTasks()" class="px-3 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    <option value="all">כל העדיפויות</option>
-                    <option value="high">🔥 דחופה</option>
-                    <option value="medium">⚡ בינונית</option>
-                    <option value="low">🌱 רגילה</option>
-                </select>
-            </div>
+            <select id="filter-priority" onchange="renderTasks()" aria-label="סינון לפי עדיפות" class="px-3 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="all">הכל</option>
+                <option value="high">🔥 דחופה</option>
+                <option value="medium">⚡ בינונית</option>
+                <option value="low">🌱 רגילה</option>
+            </select>
         </section>
 
-        <!-- לשוניות קטגוריות -->
-        <nav class="flex items-center gap-2 p-1.5 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl shadow-inner overflow-x-auto snap-x no-scrollbar">
-            <button onclick="setActiveTab('daily')" id="tab-daily" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 shadow-sm text-brand-600 dark:text-gold-400 font-bold border border-slate-200/50 dark:border-slate-600/50 whitespace-nowrap">
-                <span>☀️</span> יומי
-                <span id="badge-daily" class="text-[10px] px-2 py-0.5 rounded-full bg-brand-50 dark:bg-slate-800 text-brand-700 dark:text-gold-400 font-bold shadow-sm">0</span>
-            </button>
-            <button onclick="setActiveTab('weekly')" id="tab-weekly" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap">
-                <span>📅</span> שבועי
-                <span id="badge-weekly" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors">0</span>
-            </button>
-            <button onclick="setActiveTab('monthly')" id="tab-monthly" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap">
-                <span>🗓️</span> חודשי
-                <span id="badge-monthly" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors">0</span>
-            </button>
-            <button onclick="setActiveTab('general')" id="tab-general" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap">
-                <span>💡</span> כללי
-                <span id="badge-general" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors">0</span>
-            </button>
-            <button onclick="setActiveTab('completed')" id="tab-completed" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap">
-                <span>✅</span> הושלמו
-                <span id="badge-completed" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors">0</span>
-            </button>
-        </nav>
+        <!-- לשוניות קטגוריות (מסכים גדולים) -->
+        <nav id="top-tabs" class="hidden sm:flex items-center gap-2 p-1.5 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl shadow-inner overflow-x-auto snap-x no-scrollbar" aria-label="ניווט קטגוריות"></nav>
+
+        <!-- כותרת התצוגה -->
+        <div class="flex items-end justify-between gap-3 -mb-1">
+            <div>
+                <h2 id="view-title" class="text-lg font-black text-slate-800 dark:text-white leading-tight">היום</h2>
+                <p id="view-subtitle" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium"></p>
+            </div>
+        </div>
 
         <!-- רשימת משימות -->
-        <section class="flex-1 flex flex-col gap-3 min-h-[300px]" id="tasks-container">
-            <!-- כרטיסי משימות -->
-        </section>
+        <section class="flex-1 flex flex-col gap-3 min-h-[240px]" id="tasks-container"></section>
 
     </main>
 
     <!-- שורת קרדיט תחתונה -->
     <footer class="w-full max-w-4xl mx-auto px-4 py-4 mt-auto text-center border-t border-slate-200/80 dark:border-slate-800/80">
-        <a href="http://birkat-hanasi.co.il/" target="_blank" rel="noopener noreferrer" 
+        <a href="http://birkat-hanasi.co.il/" target="_blank" rel="noopener noreferrer"
            class="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 hover:border-gold-500 dark:hover:border-gold-400 shadow-sm hover:shadow-md transition-all group">
             <img src="birkat-hanasi.png" alt="ברכת הנשיא" class="w-8 h-8 rounded-full bg-white object-contain p-0.5 shadow-sm group-hover:scale-110 transition-transform duration-300">
             <span class="text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -196,44 +187,62 @@
         </a>
     </footer>
 
-    <!-- כפתורי פעולה (FAB) -->
-    <div class="fixed bottom-6 left-6 z-40 flex items-center gap-3">
-        <button onclick="quickOpenPhotoModal()" title="צלם משימה חדשה" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:scale-105 active:scale-95 transition">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        </button>
-        <button onclick="quickOpenAudioModal()" title="הקלט משימה קולית" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 text-rose-500 shadow-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:scale-105 active:scale-95 transition">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-        </button>
-        <button onclick="openTaskModal()" title="הוסף משימה" class="h-14 px-6 rounded-full bg-gradient-to-r from-brand-600 to-gold-500 hover:from-brand-700 hover:to-gold-600 text-white shadow-xl shadow-brand-600/30 flex items-center gap-2 font-bold text-base hover:scale-105 active:scale-95 transition">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+    <!-- ניווט תחתון (מובייל) -->
+    <nav id="bottom-nav" class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 safe-b" aria-label="ניווט ראשי"></nav>
+
+    <!-- כפתור פעולה צף + תפריט מהיר -->
+    <div id="fab-backdrop" class="hidden fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-[2px]" onclick="toggleFabMenu(false)"></div>
+    <div class="fixed left-4 z-50 fab-pos flex flex-col items-start gap-3">
+        <div id="fab-menu" class="hidden flex flex-col items-start gap-2.5 anim-in">
+            <button onclick="quickOpenAudioModal()" class="flex items-center gap-2.5 pr-3 pl-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-100">
+                <span class="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-500 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                </span>
+                הקלטה קולית
+            </button>
+            <button onclick="quickOpenPhotoModal()" class="flex items-center gap-2.5 pr-3 pl-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-100">
+                <span class="w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </span>
+                צילום משימה
+            </button>
+            <button onclick="openTaskModal()" class="flex items-center gap-2.5 pr-3 pl-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-100">
+                <span class="w-9 h-9 rounded-xl bg-gold-50 dark:bg-gold-900/40 text-gold-600 dark:text-gold-300 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </span>
+                כתיבת משימה
+            </button>
+        </div>
+        <button id="fab-main" onclick="toggleFabMenu()" aria-label="הוספת משימה" aria-expanded="false" class="h-14 pr-5 pl-6 rounded-full bg-gradient-to-r from-brand-600 to-gold-500 hover:from-brand-700 hover:to-gold-600 text-white shadow-xl shadow-brand-600/30 flex items-center gap-2 font-bold text-base active:scale-95 transition">
+            <svg id="fab-icon" class="w-6 h-6 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
             <span>משימה חדשה</span>
         </button>
     </div>
 
     <!-- מודאל: הוספה / עריכת משימה -->
-    <div id="task-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden max-h-[94vh] flex flex-col animate-in fade-in slide-in-from-bottom duration-200">
-            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+    <div id="task-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4" data-dismiss="closeTaskModal" role="dialog" aria-modal="true" aria-labelledby="modal-task-heading">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden max-h-[92vh] flex flex-col anim-sheet" data-panel>
+            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between shrink-0">
                 <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="modal-task-heading">משימה חדשה</h3>
-                <button type="button" onclick="closeTaskModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700">
+                <button type="button" onclick="closeTaskModal()" aria-label="סגור" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
-            <form id="task-form" onsubmit="handleSaveTask(event)" class="p-6 overflow-y-auto flex-1 flex flex-col gap-4">
+            <form id="task-form" onsubmit="handleSaveTask(event)" class="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
                 <input type="hidden" id="task-id">
 
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
-                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">מה המשימה?</label>
-                        <span id="speech-indicator-tag" class="hidden text-[11px] font-bold text-rose-500 animate-pulse flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-rose-500"></span> מקשיב כעת...
+                        <label for="task-title" class="block text-xs font-semibold text-slate-500 dark:text-slate-400">מה המשימה?</label>
+                        <span id="speech-indicator-tag" class="hidden text-[11px] font-bold text-rose-500 animate-pulse items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> מקשיב כעת...
                         </span>
                     </div>
                     <div class="relative flex items-center">
-                        <input type="text" id="task-title" required placeholder="למשל: ישיבת צוות..." 
+                        <input type="text" id="task-title" required placeholder="למשל: ישיבת צוות..." autocomplete="off"
                             class="w-full pr-4 pl-12 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-sm transition">
-                        <button type="button" id="btn-toggle-speech" onclick="toggleSpeechRecognition('task-title')" title="לחץ להכתבה קולית או לעצירה" 
+                        <button type="button" id="btn-toggle-speech" onclick="toggleSpeechRecognition('task-title')" title="הכתבה קולית" aria-label="הכתבה קולית"
                             class="absolute left-2 p-2 rounded-xl text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <svg id="speech-icon-title" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                         </button>
@@ -241,69 +250,81 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">הערות ופרטים נוספים</label>
+                    <label for="task-desc" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">הערות ופרטים נוספים</label>
                     <textarea id="task-desc" rows="2" placeholder="הוסף פרטים..." class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"></textarea>
                 </div>
 
+                <!-- סוג המשימה -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">סוג המשימה</label>
+                    <div id="category-chips" class="grid grid-cols-4 gap-1.5"></div>
+                    <input type="hidden" id="task-category" value="daily">
+                </div>
+
+                <!-- מתי? (משתנה לפי סוג) -->
+                <div class="rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 p-3.5">
+                    <label id="date-label" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">מתי?</label>
+
+                    <!-- יומי -->
+                    <div id="input-daily" class="text-sm py-2.5 px-3 bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-200 rounded-xl font-bold flex items-center justify-center gap-2 border border-brand-100 dark:border-brand-800">
+                        🔄 חוזרת בכל יום
+                    </div>
+
+                    <!-- שבועי: בחירת מספר ימים -->
+                    <div id="input-weekly" class="hidden">
+                        <div id="weekday-chips" class="grid grid-cols-7 gap-1.5" role="group" aria-label="ימים בשבוע"></div>
+                        <div class="flex flex-wrap gap-1.5 mt-2.5">
+                            <button type="button" onclick="setWeekdayPreset('week')" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">א׳-ה׳</button>
+                            <button type="button" onclick="setWeekdayPreset('all')" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">כל השבוע</button>
+                            <button type="button" onclick="setWeekdayPreset('none')" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">נקה</button>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">אפשר לבחור כמה ימים. בכל יום שנבחר המשימה תופיע אוטומטית ברשימת "היום".</p>
+                    </div>
+
+                    <!-- חודשי: בחירת מספר תאריכים -->
+                    <div id="input-monthly" class="hidden">
+                        <div id="monthday-chips" class="grid grid-cols-7 gap-1.5" role="group" aria-label="ימים בחודש"></div>
+                        <div class="flex flex-wrap gap-1.5 mt-2.5">
+                            <button type="button" onclick="setMonthdayPreset('first')" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">1 בחודש</button>
+                            <button type="button" onclick="setMonthdayPreset('last')" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">סוף החודש</button>
+                            <button type="button" onclick="setMonthdayPreset('none')" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">נקה</button>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">אפשר לבחור כמה תאריכים. בחודש קצר, 29-31 יופיעו ביום האחרון של החודש.</p>
+                    </div>
+
+                    <!-- כללי (תאריך חד פעמי) -->
+                    <div id="input-general" class="hidden">
+                        <input type="date" id="general-date" class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold">
+                        <div class="flex flex-wrap gap-1.5 mt-2.5">
+                            <button type="button" onclick="setGeneralDateOffset(0)" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">היום</button>
+                            <button type="button" onclick="setGeneralDateOffset(1)" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">מחר</button>
+                            <button type="button" onclick="setGeneralDateOffset(7)" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-[11px] font-semibold text-slate-600 dark:text-slate-300">בעוד שבוע</button>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">משימה חד פעמית. ביום שנבחר היא תופיע אוטומטית ברשימת "היום".</p>
+                    </div>
+                </div>
+
+                <!-- שעת תזכורת ועדיפות -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">סוג המשימה</label>
-                        <select id="task-category" onchange="updateFormForCategory()" class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
-                            <option value="daily">☀️ יומית (מחזורית)</option>
-                            <option value="weekly">📅 שבועית (מחזורית)</option>
-                            <option value="monthly">🗓️ חודשית (מחזורית)</option>
-                            <option value="general">💡 כללית (חד פעמית)</option>
-                        </select>
+                        <label for="task-due-time" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">שעת תזכורת 🔔</label>
+                        <input type="time" id="task-due-time" class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-brand-600 dark:text-gold-400">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">עדיפות</label>
-                        <select id="task-priority" class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <label for="task-priority" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">עדיפות</label>
+                        <select id="task-priority" class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500" style="min-height:2.75rem">
                             <option value="medium">⚡ בינונית</option>
                             <option value="high">🔥 דחופה</option>
                             <option value="low">🌱 רגילה</option>
                         </select>
                     </div>
                 </div>
-
-                <!-- תאריך והתראה דינאמי לפי סוג המשימה -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label id="date-label" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">מתי?</label>
-                        
-                        <!-- יומי -->
-                        <div id="input-daily" class="text-sm py-2.5 px-3 bg-brand-50/50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 rounded-2xl font-bold flex items-center justify-center border border-brand-100 dark:border-brand-800">
-                            🔄 בכל יום
-                        </div>
-                        
-                        <!-- שבועי -->
-                        <select id="input-weekly" class="hidden w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold">
-                            <option value="0">יום ראשון</option>
-                            <option value="1">יום שני</option>
-                            <option value="2">יום שלישי</option>
-                            <option value="3">יום רביעי</option>
-                            <option value="4">יום חמישי</option>
-                            <option value="5">יום שישי</option>
-                            <option value="6">יום שבת</option>
-                        </select>
-
-                        <!-- חודשי -->
-                        <select id="input-monthly" class="hidden w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold">
-                            <script>
-                                for(let i=1; i<=31; i++) {
-                                    document.write(`<option value="${i}">${i} בחודש</option>`);
-                                }
-                            </script>
-                        </select>
-
-                        <!-- כללי (תאריך רגיל) -->
-                        <input type="date" id="input-general" class="hidden w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
-                            שעת התראה 🔔
-                        </label>
-                        <input type="time" id="task-due-time" class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-brand-600 dark:text-gold-400">
-                    </div>
+                <div class="flex flex-wrap gap-1.5 -mt-1.5">
+                    <button type="button" onclick="setDueTime('08:00')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300">08:00</button>
+                    <button type="button" onclick="setDueTime('12:00')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300">12:00</button>
+                    <button type="button" onclick="setDueTime('18:00')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300">18:00</button>
+                    <button type="button" onclick="setDueTime('20:30')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300">20:30</button>
+                    <button type="button" onclick="setDueTime('')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-[11px] font-semibold text-slate-600 dark:text-slate-300">ללא תזכורת</button>
                 </div>
 
                 <!-- אזור מולטימדיה -->
@@ -315,13 +336,13 @@
                                 <button type="button" id="btn-record-audio" onclick="toggleAudioRecording()" title="הקלט ישירות בדפדפן" class="p-3 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition shadow-sm">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                                 </button>
-                                <label for="native-audio-file-input" title="הקלטה ברשמקול המכשיר (עובד תמיד)" class="cursor-pointer p-3 rounded-full bg-gold-50 dark:bg-gold-950/40 text-gold-600 dark:text-gold-400 hover:bg-gold-100 transition shadow-sm">
+                                <label for="native-audio-file-input" title="הקלטה ברשמקול המכשיר" class="cursor-pointer p-3 rounded-full bg-gold-50 dark:bg-gold-950/40 text-gold-600 dark:text-gold-400 hover:bg-gold-100 transition shadow-sm">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13zM12 14a2 2 0 100-4 2 2 0 000 4z"></path></svg>
                                 </label>
                                 <input type="file" id="native-audio-file-input" accept="audio/*" capture="microphone" class="hidden" onchange="handleNativeAudioUpload(event)">
                             </div>
                             <span id="record-status" class="text-[11px] font-medium text-slate-500">הקלטה חיה או ברשמקול המכשיר</span>
-                            <div id="audio-preview-box" class="w-full hidden mt-1 flex flex-col gap-1 items-center">
+                            <div id="audio-preview-box" class="w-full hidden mt-1 flex-col gap-1 items-center">
                                 <audio id="audio-preview-element" controls class="w-full h-8"></audio>
                                 <button type="button" onclick="removeAudioRecording()" class="text-[10px] text-rose-500 hover:underline">מחק הקלטה</button>
                             </div>
@@ -334,45 +355,48 @@
                             <input type="file" id="camera-file-input" accept="image/*" class="hidden" onchange="handleImageSelection(event)">
                             <span id="photo-status" class="text-[11px] font-medium text-slate-500">צלם או העלה תמונה</span>
                             <div id="image-preview-box" class="hidden relative mt-1">
-                                <img id="image-preview-element" class="w-14 h-14 object-cover rounded-xl border border-slate-300 dark:border-slate-600">
-                                <button type="button" onclick="removeAttachedImage()" class="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow hover:bg-rose-600">
+                                <img id="image-preview-element" alt="תצוגה מקדימה" class="w-14 h-14 object-cover rounded-xl border border-slate-300 dark:border-slate-600">
+                                <button type="button" onclick="removeAttachedImage()" aria-label="הסר תמונה" class="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow hover:bg-rose-600">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="flex items-center gap-3 pt-3">
-                    <button type="button" onclick="closeTaskModal()" class="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition">ביטול</button>
-                    <button type="submit" class="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md shadow-brand-500/30 transition">שמור משימה</button>
-                </div>
             </form>
+
+            <div class="flex items-center gap-3 p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0 safe-b">
+                <button type="button" onclick="closeTaskModal()" class="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition">ביטול</button>
+                <button type="submit" form="task-form" class="flex-[2] py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm shadow-md shadow-brand-500/30 transition">שמור משימה</button>
+            </div>
         </div>
     </div>
 
     <!-- מודאל פופאפ התראה (Alarm) -->
-    <div id="alarm-modal" class="fixed inset-0 z-[100] bg-brand-900/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border-2 border-brand-500 dark:border-gold-500 flex flex-col items-center text-center gap-4 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+    <div id="alarm-modal" class="fixed inset-0 z-[100] bg-brand-900/85 backdrop-blur-md hidden items-center justify-center p-4" role="alertdialog" aria-modal="true" aria-labelledby="alarm-title">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border-2 border-brand-500 dark:border-gold-500 flex flex-col items-center text-center gap-3 anim-pop relative overflow-hidden">
             <div class="absolute -top-12 -right-12 w-32 h-32 bg-gold-400/20 blur-2xl rounded-full pointer-events-none"></div>
-            
+
             <div class="w-20 h-20 rounded-full bg-brand-100 dark:bg-slate-700 flex items-center justify-center text-brand-600 dark:text-gold-400 mb-1 bell-ring shadow-inner">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                 </svg>
             </div>
-            
-            <h2 class="text-2xl font-black text-slate-800 dark:text-white" id="alarm-title">תזכורת למשימה!</h2>
-            <p class="text-slate-500 dark:text-slate-300 text-sm font-medium px-2" id="alarm-desc">הגיע הזמן לבצע את המשימה</p>
-            
-            <div class="flex flex-col gap-3 w-full mt-4 z-10">
+
+            <span id="alarm-time" class="text-xs font-bold text-gold-600 dark:text-gold-400"></span>
+            <h2 class="text-2xl font-black text-slate-800 dark:text-white break-words" id="alarm-title">תזכורת למשימה!</h2>
+            <p class="text-slate-500 dark:text-slate-300 text-sm font-medium px-2 break-words" id="alarm-desc">הגיע הזמן לבצע את המשימה</p>
+            <div id="alarm-media" class="w-full"></div>
+
+            <div class="flex flex-col gap-2.5 w-full mt-3 z-10">
                 <button onclick="handleAlarmAction('complete')" class="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                     סמן כהושלם
                 </button>
-                <button onclick="handleAlarmAction('snooze')" class="w-full py-3.5 rounded-2xl bg-gold-500 hover:bg-gold-600 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
-                    <span class="text-lg">💤</span> נודניק (עוד 10 דקות)
-                </button>
+                <div class="flex gap-2.5">
+                    <button onclick="handleAlarmAction('snooze', 10)" class="flex-1 py-3 rounded-2xl bg-gold-500 hover:bg-gold-600 text-white font-bold text-xs shadow-md transition-all">💤 עוד 10 דק׳</button>
+                    <button onclick="handleAlarmAction('snooze', 60)" class="flex-1 py-3 rounded-2xl bg-gold-500 hover:bg-gold-600 text-white font-bold text-xs shadow-md transition-all">💤 עוד שעה</button>
+                </div>
                 <button onclick="handleAlarmAction('dismiss')" class="w-full py-3 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm transition-all hover:bg-slate-200 dark:hover:bg-slate-600">
                     סגור התראה
                 </button>
@@ -381,654 +405,1524 @@
     </div>
 
     <!-- מודאל: הצגת תמונה -->
-    <div id="lightbox-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4" onclick="closeLightbox()">
-        <div class="relative max-w-2xl w-full" onclick="event.stopPropagation()">
-            <button onclick="closeLightbox()" class="absolute -top-10 left-0 text-white p-2 hover:opacity-80">
+    <div id="lightbox-modal" class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4" data-dismiss="closeLightbox" role="dialog" aria-modal="true">
+        <div class="relative max-w-2xl w-full" data-panel>
+            <button onclick="closeLightbox()" aria-label="סגור" class="absolute -top-11 left-0 text-white p-2 hover:opacity-80">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <img id="lightbox-image" class="w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl">
+            <img id="lightbox-image" alt="תמונת משימה" class="w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl">
         </div>
     </div>
 
-    <!-- מודאל: גיבוי ושחזור -->
-    <div id="backup-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-700 flex flex-col gap-4">
-            <div class="flex items-center justify-between">
-                <h3 class="font-bold text-lg text-slate-800 dark:text-white">גיבוי וניהול נתונים</h3>
-                <button onclick="toggleModal('backup-modal')" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white">
+    <!-- מודאל: אישור מחיקה -->
+    <div id="confirm-modal" class="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4" data-dismiss="closeConfirm" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-700 flex flex-col gap-3 text-center anim-pop" data-panel>
+            <div class="w-14 h-14 mx-auto rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-500 flex items-center justify-center">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </div>
+            <h3 id="confirm-title" class="font-bold text-base text-slate-800 dark:text-white">למחוק את המשימה?</h3>
+            <p id="confirm-text" class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">הפעולה תמחק גם את התזכורות וההיסטוריה של המשימה.</p>
+            <div class="flex gap-2.5 mt-2">
+                <button onclick="closeConfirm()" class="flex-1 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm">ביטול</button>
+                <button id="confirm-ok" class="flex-1 py-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm">מחק</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- מודאל: הגדרות, התראות וגיבוי -->
+    <div id="settings-modal" class="fixed inset-0 z-[65] bg-slate-900/60 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4" data-dismiss="closeSettings" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 flex flex-col max-h-[92vh] anim-sheet" data-panel>
+            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between shrink-0">
+                <h3 id="settings-title" class="font-bold text-lg text-slate-800 dark:text-white">הגדרות</h3>
+                <button onclick="closeSettings()" aria-label="סגור" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                כל המשימות, ההקלטות והתמונות נשמרות מקומית ומאובטחת על מכשיר זה. תוכל לייצא קובץ גיבוי או לשחזר נתונים.
-            </p>
-            <div class="flex flex-col gap-2.5">
-                <button onclick="exportDataToFile()" class="w-full py-3 px-4 rounded-2xl bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300 font-semibold text-xs flex items-center justify-center gap-2 hover:bg-brand-100 transition">
-                    ייצוא קובץ גיבוי מלא (JSON)
-                </button>
-                <label class="w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-200 transition">
-                    שחזור נתונים מקובץ גיבוי
-                    <input type="file" accept=".json" class="hidden" onchange="importDataFromFile(event)">
-                </label>
+
+            <div class="p-5 overflow-y-auto flex flex-col gap-5 safe-b">
+                <!-- התראות -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">🔔 תזכורות</h4>
+                    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden">
+                        <div class="flex items-center justify-between gap-3 p-3.5">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">התראות מערכת</p>
+                                <p id="notif-status" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">בודק...</p>
+                            </div>
+                            <button id="notif-btn" onclick="enableNotifications()" class="shrink-0 px-3 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition">הפעל</button>
+                        </div>
+                        <label class="flex items-center justify-between gap-3 p-3.5 cursor-pointer">
+                            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">צליל התראה</span>
+                            <input type="checkbox" id="set-sound" onchange="updateSettingsFromUI()" class="w-5 h-5 accent-brand-600">
+                        </label>
+                        <label class="flex items-center justify-between gap-3 p-3.5 cursor-pointer">
+                            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">רטט</span>
+                            <input type="checkbox" id="set-vibrate" onchange="updateSettingsFromUI()" class="w-5 h-5 accent-brand-600">
+                        </label>
+                        <button onclick="testReminder()" class="w-full text-right p-3.5 text-sm font-semibold text-brand-600 dark:text-gold-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">בדיקת תזכורת עכשיו</button>
+                    </div>
+                    <div class="mt-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 p-3">
+                        <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                            <b>כדי שהתזכורות יעבדו גם כשהמסך כבוי:</b><br>
+                            1. התקן את האפליקציה למסך הבית (בתפריט הדפדפן: "הוסף למסך הבית").<br>
+                            2. אשר הרשאת התראות.<br>
+                            3. באנדרואיד - בטל "חיסכון בסוללה" לאפליקציה.<br>
+                            <span class="text-slate-500 dark:text-slate-400">שים לב: אפליקציית דפדפן אינה יכולה להבטיח צלצול מדויק לשנייה כשהמכשיר במצב שינה עמוקה. אם החמצנו תזכורת, היא תוצג ברגע שתפתח את האפליקציה.</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- נתונים -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">💾 נתונים וגיבוי</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-2.5">
+                        כל המשימות, ההקלטות והתמונות נשמרות מקומית על מכשיר זה בלבד.
+                    </p>
+                    <div class="flex flex-col gap-2.5">
+                        <button onclick="exportDataToFile()" class="w-full py-3 px-4 rounded-2xl bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-200 font-semibold text-xs hover:bg-brand-100 transition">ייצוא קובץ גיבוי מלא (JSON)</button>
+                        <label class="w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+                            שחזור נתונים מקובץ גיבוי
+                            <input type="file" accept=".json,application/json" class="hidden" onchange="importDataFromFile(event)">
+                        </label>
+                        <button onclick="confirmClearAll()" class="w-full py-3 px-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 font-semibold text-xs hover:bg-rose-100 transition">מחיקת כל הנתונים</button>
+                    </div>
+                </div>
+
+                <p id="app-version" class="text-[10px] text-center text-slate-400"></p>
             </div>
         </div>
     </div>
 
     <!-- הודעת טוסט (Toast) -->
-    <div id="toast" class="fixed bottom-20 sm:bottom-6 right-1/2 translate-x-1/2 z-50 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-5 py-2.5 rounded-full text-xs font-semibold shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 whitespace-nowrap">
+    <div id="toast" class="fixed z-[80] bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-5 py-2.5 rounded-full text-xs font-semibold shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 whitespace-nowrap" style="bottom:calc(9.5rem + env(safe-area-inset-bottom, 0px)); right:50%; transform:translateX(50%)">
         <span id="toast-icon">✨</span>
         <span id="toast-message">הודעה</span>
+        <button id="toast-action" class="hidden underline font-bold"></button>
     </div>
 
     <!-- קנבס לקונפטי -->
-    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[60]"></canvas>
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[90] hidden"></canvas>
 
     <script>
-        /* --- משתנים גלובליים --- */
-        let db = null;
-        let tasks = [];
-        let activeTab = 'daily';
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let recordedAudioBlob = null;
-        let attachedImageBase64 = null;
-        let isRecording = false;
-        let recordTimerInterval = null;
-        let recordSeconds = 0;
-        let activeAudioStream = null;
-        
-        let recognitionInstance = null;
-        let isTranscribing = false;
-        let speechTimeout = null;
+    /* ============================================================
+       תזכיר לי - לוגיקת האפליקציה
+       מודל הנתונים: לכל משימה יש "הגדרת מחזוריות" אחת בלבד,
+       וההשלמות נשמרות כרשימת תאריכים (completions).
+       כך משימה יומית שסומנה כבוצעה עוברת ל"הושלמו" וחוזרת מחר.
+       ============================================================ */
 
-        let audioCtx = null;
-        let alarmIntervalId = null;
-        let activeAlarmTask = null;
-        let alarmCheckTimer = null;
-        let audioContextUnlocked = false;
+    const APP_VERSION = '2.0.0';
+    const DB_NAME = 'TazkirLiAppDB';
+    const DB_VERSION = 3;
+    const STORE_NAME = 'tasks';
+    const LS_SETTINGS = 'tz_settings_v1';
+    const LS_FIRED = 'tz_fired_v1';
+    const LS_TASKS_FALLBACK = 'tz_tasks_fallback_v1';
 
-        const DB_NAME = 'TazkirLiAppDB';
-        const DB_VERSION = 2; // עודכן גרסה למבנה החדש
-        const STORE_NAME = 'tasks';
+    const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    const DAY_SHORT = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+    const CATEGORIES = {
+        daily:   { label: 'היום',  icon: '☀️', title: 'היום',           sub: 'כל מה שמתוזמן להיום - יומי, שבועי, חודשי וחד פעמי' },
+        weekly:  { label: 'שבועי', icon: '📅', title: 'משימות שבועיות', sub: 'חוזרות בימים קבועים בשבוע' },
+        monthly: { label: 'חודשי', icon: '🗓️', title: 'משימות חודשיות', sub: 'חוזרות בתאריכים קבועים בחודש' },
+        general: { label: 'כללי',  icon: '💡', title: 'משימות כלליות',  sub: 'משימות חד פעמיות עם תאריך יעד' },
+        completed:{label: 'הושלמו',icon: '✅', title: 'משימות שהושלמו', sub: 'היסטוריית הביצוע שלך' }
+    };
+    const TABS = ['daily', 'weekly', 'monthly', 'general', 'completed'];
 
-        const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    /* --- מצב גלובלי --- */
+    let db = null;
+    let tasks = [];
+    let activeTab = 'daily';
+    let settings = { sound: true, vibrate: true, bannerDismissed: false };
+    let firedAlarms = {};
+    let swReg = null;
+    let lastRenderedDay = null;
 
-        /* --- מסד נתונים --- */
-        function initDB() {
-            return new Promise((resolve) => {
+    let selectedWeekDays = [];
+    let selectedMonthDays = [];
+
+    let mediaRecorder = null, audioChunks = [], recordedAudioBlob = null, attachedImageBase64 = null;
+    let isRecording = false, recordTimerInterval = null, recordSeconds = 0, activeAudioStream = null;
+    let recognitionInstance = null, isTranscribing = false, speechTimeout = null;
+    let audioCtx = null, alarmIntervalId = null, activeAlarmTask = null, audioContextUnlocked = false;
+    let alarmQueue = [], pendingConfirm = null, doneSectionOpen = false;
+
+    /* ============================================================
+       עזרי תאריכים
+       ============================================================ */
+    function ymd(d = new Date()) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function todayStr() { return ymd(new Date()); }
+    function parseYmd(s) { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); }
+    function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+    function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+    function formatDate(s) { const p = String(s).split('-'); return `${Number(p[2])}.${Number(p[1])}.${p[0]}`; }
+    function relativeDateLabel(s) {
+        if (!s) return '';
+        const t = todayStr();
+        if (s === t) return 'היום';
+        if (s === ymd(addDays(new Date(), 1))) return 'מחר';
+        if (s === ymd(addDays(new Date(), -1))) return 'אתמול';
+        const d = parseYmd(s);
+        const diff = Math.round((d - parseYmd(t)) / 86400000);
+        if (diff > 1 && diff < 7) return `יום ${DAY_NAMES[d.getDay()]}`;
+        return formatDate(s);
+    }
+    function nowTimeStr() { const n = new Date(); return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`; }
+
+    /* ============================================================
+       מסד נתונים (IndexedDB עם גיבוי ל-localStorage)
+       ============================================================ */
+    function initDB() {
+        return new Promise((resolve) => {
+            let settled = false;
+            const done = (v) => { if (!settled) { settled = true; resolve(v); } };
+            try {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
                 request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                    }
+                    const d = e.target.result;
+                    if (!d.objectStoreNames.contains(STORE_NAME)) d.createObjectStore(STORE_NAME, { keyPath: 'id' });
                 };
-                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
-                request.onerror = (e) => { console.error('IndexedDB error', e); resolve(null); };
-            });
-        }
+                request.onsuccess = (e) => { db = e.target.result; done(db); };
+                request.onerror = () => { console.warn('IndexedDB לא זמין - עוברים לאחסון מקומי'); done(null); };
+                request.onblocked = () => done(null);
+                setTimeout(() => done(db), 3000);
+            } catch (e) { done(null); }
+        });
+    }
 
-        async function loadTasks() {
-            if (!db) return;
-            return new Promise((resolve) => {
-                const transaction = db.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-                request.onsuccess = () => {
-                    tasks = request.result || [];
-                    sortTasks(); renderTasks(); updateProgressWidget();
-                    resolve(tasks);
-                };
-            });
-        }
+    function saveFallback() {
+        try {
+            // ללא מדיה כבדה כדי לא לחרוג ממגבלת localStorage
+            localStorage.setItem(LS_TASKS_FALLBACK, JSON.stringify(tasks.map(t => ({ ...t, image: null, audio: null }))));
+        } catch (e) {}
+    }
 
-        async function saveTaskToDB(task) {
-            if (!db) return;
-            return new Promise((resolve) => {
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                transaction.objectStore(STORE_NAME).put(task);
-                transaction.oncomplete = () => resolve(true);
-            });
-        }
-
-        async function deleteTaskFromDB(id) {
-            if (!db) return;
-            return new Promise((resolve) => {
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                transaction.objectStore(STORE_NAME).delete(id);
-                transaction.oncomplete = () => resolve(true);
-            });
-        }
-
-        /* --- התראות וסאונד --- */
-        function initAudioContext() {
-            if (audioContextUnlocked) return;
+    function loadTasks() {
+        return new Promise((resolve) => {
+            if (!db) {
+                try { tasks = JSON.parse(localStorage.getItem(LS_TASKS_FALLBACK) || '[]'); } catch (e) { tasks = []; }
+                resolve(tasks); return;
+            }
             try {
-                window.AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!audioCtx) audioCtx = new AudioContext();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                audioContextUnlocked = true;
-            } catch (e) {}
-        }
+                const req = db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).getAll();
+                req.onsuccess = () => { tasks = req.result || []; resolve(tasks); };
+                req.onerror = () => { tasks = []; resolve(tasks); };
+            } catch (e) { tasks = []; resolve(tasks); }
+        });
+    }
 
-        function playAlarmSound() {
-            initAudioContext();
-            if (!audioCtx) return;
-            const playBeep = () => {
-                try {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.15);
-                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                    osc.connect(gain); gain.connect(audioCtx.destination);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-                } catch(e){}
-            };
-            playBeep(); setTimeout(playBeep, 200);
-            alarmIntervalId = setInterval(() => { playBeep(); setTimeout(playBeep, 200); }, 1500);
-        }
+    function saveTaskToDB(task) {
+        saveFallback();
+        return new Promise((resolve) => {
+            if (!db) return resolve(false);
+            try {
+                const tx = db.transaction([STORE_NAME], 'readwrite');
+                tx.objectStore(STORE_NAME).put(task);
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = () => { showToast('לא הצלחנו לשמור - ייתכן שאין מספיק מקום', '⚠️'); resolve(false); };
+            } catch (e) { resolve(false); }
+        });
+    }
 
-        function stopAlarmSound() {
-            if (alarmIntervalId) { clearInterval(alarmIntervalId); alarmIntervalId = null; }
-        }
+    function deleteTaskFromDB(id) {
+        return new Promise((resolve) => {
+            if (!db) { saveFallback(); return resolve(false); }
+            try {
+                const tx = db.transaction([STORE_NAME], 'readwrite');
+                tx.objectStore(STORE_NAME).delete(id);
+                tx.oncomplete = () => { saveFallback(); resolve(true); };
+                tx.onerror = () => resolve(false);
+            } catch (e) { resolve(false); }
+        });
+    }
 
-        function checkAlarms() {
-            if (activeAlarmTask) return;
-            const now = new Date();
-            const todayStr = getTodayDateString(now);
-            const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    /* ============================================================
+       המרה ממבנה נתונים ישן (גרסה 1) + ניקוי כפילויות
+       ============================================================ */
+    function migrateTasks(list) {
+        const out = list.map(t => {
+            const task = { ...t };
+            task.category = ['daily', 'weekly', 'monthly', 'general'].includes(task.category) ? task.category : 'daily';
+            task.priority = ['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium';
+            task.title = task.title || 'משימה';
+            task.dueTime = task.dueTime || '';
 
-            for (let t of tasks) {
-                if (!t.completed && !t.notified && t.dueDate === todayStr && t.dueTime === timeStr) {
-                    triggerAlarmPopup(t);
-                    break;
+            if (!Array.isArray(task.weekDays)) {
+                task.weekDays = task.category === 'weekly' && task.recurringValue !== undefined && task.recurringValue !== ''
+                    ? [parseInt(task.recurringValue) || 0] : [];
+            }
+            if (!Array.isArray(task.monthDays)) {
+                task.monthDays = task.category === 'monthly' && task.recurringValue !== undefined && task.recurringValue !== ''
+                    ? [parseInt(task.recurringValue) || 1] : [];
+            }
+            if (!task.date && task.category === 'general') {
+                task.date = (typeof task.recurringValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(task.recurringValue))
+                    ? task.recurringValue : (task.dueDate || todayStr());
+            }
+            if (!Array.isArray(task.completions)) {
+                task.completions = [];
+                if (task.completed) {
+                    const at = task.completedAt || new Date().toISOString();
+                    const occ = task.category === 'general' ? (task.date || task.dueDate || ymd(new Date(at))) : (task.dueDate || ymd(new Date(at)));
+                    task.completions.push({ date: occ, at });
                 }
             }
-        }
-
-        function triggerAlarmPopup(task) {
-            activeAlarmTask = task;
-            document.getElementById('alarm-title').textContent = escapeHtml(task.title);
-            document.getElementById('alarm-desc').textContent = task.desc ? escapeHtml(task.desc) : 'הגיע הזמן לבצע את המשימה!';
-            document.getElementById('alarm-modal').classList.remove('hidden');
-            playAlarmSound();
-        }
-
-        async function handleAlarmAction(action) {
-            stopAlarmSound();
-            document.getElementById('alarm-modal').classList.add('hidden');
-            if (!activeAlarmTask) return;
-            
-            const t = activeAlarmTask;
-            activeAlarmTask = null;
-
-            if (action === 'complete') {
-                await toggleTaskCompletion(t.id); // משתמש בפונקציה המרכזית שגם מייצרת את המשימה הבאה
-            } else if (action === 'dismiss') {
-                t.notified = true; 
-                await saveTaskToDB(t);
-            } else if (action === 'snooze') {
-                t.notified = false;
-                let [h, m] = t.dueTime.split(':').map(Number);
-                m += 10;
-                if (m >= 60) { h += 1; m -= 60; }
-                if (h >= 24) { h -= 24; }
-                t.dueTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                await saveTaskToDB(t);
-                showToast(`נודניק - נזכיר לך ב-${t.dueTime}`, '💤');
-            }
-            sortTasks(); renderTasks(); updateProgressWidget();
-        }
-
-        /* --- אתחול אפליקציה --- */
-        window.addEventListener('DOMContentLoaded', async () => {
-            initDateHeader();
-            initDarkMode();
-            await initDB();
-            await loadTasks();
-            updateFormForCategory();
-            alarmCheckTimer = setInterval(checkAlarms, 10000);
+            task.startDate = task.startDate || task.createdAt || (task.completions[0] && task.completions[0].date) || todayStr();
+            task.createdAt = task.createdAt || new Date().toISOString();
+            delete task.completed; delete task.completedAt; delete task.dueDate;
+            delete task.notified; delete task.nextInstanceId; delete task.recurringValue;
+            return task;
         });
 
-        /* --- עזרים לחישוב תאריכים ומחזוריות --- */
-        function getTodayDateString(dateObj = new Date()) {
-            const y = dateObj.getFullYear(), m = String(dateObj.getMonth() + 1).padStart(2, '0'), d = String(dateObj.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+        // איחוד עותקים מחזוריים שנוצרו במנגנון הישן (שכפול לכל יום)
+        const merged = [];
+        const byKey = new Map();
+        out.forEach(t => {
+            if (t.category === 'general') { merged.push(t); return; }
+            const key = [t.category, t.title.trim(), t.dueTime, (t.weekDays || []).join(','), (t.monthDays || []).join(',')].join('|');
+            const existing = byKey.get(key);
+            if (!existing) { byKey.set(key, t); merged.push(t); return; }
+            // ממזגים היסטוריית השלמות ומעדיפים את הרשומה עם המדיה
+            existing.completions = dedupeCompletions([...(existing.completions || []), ...(t.completions || [])]);
+            if (!existing.image && t.image) existing.image = t.image;
+            if (!existing.audio && t.audio) existing.audio = t.audio;
+            if (!existing.desc && t.desc) existing.desc = t.desc;
+            if (t.startDate < existing.startDate) existing.startDate = t.startDate;
+        });
+        return merged;
+    }
+
+    function dedupeCompletions(arr) {
+        const seen = new Set(); const res = [];
+        arr.forEach(c => { if (c && c.date && !seen.has(c.date)) { seen.add(c.date); res.push(c); } });
+        return res.sort((a, b) => (a.date < b.date ? 1 : -1));
+    }
+
+    async function migrateAndPersist() {
+        const before = JSON.stringify(tasks.map(t => t.id).sort());
+        const migrated = migrateTasks(tasks);
+        const changed = before !== JSON.stringify(migrated.map(t => t.id).sort()) ||
+            tasks.some(t => t.completed !== undefined || t.recurringValue !== undefined || !Array.isArray(t.completions));
+        if (!changed) { tasks = migrated; return; }
+        const keepIds = new Set(migrated.map(t => t.id));
+        for (const t of tasks) if (!keepIds.has(t.id)) await deleteTaskFromDB(t.id);
+        tasks = migrated;
+        for (const t of tasks) await saveTaskToDB(t);
+    }
+
+    /* ============================================================
+       לוגיקת מחזוריות
+       ============================================================ */
+    function isDueOn(task, dateStr) {
+        if (!task) return false;
+        const d = parseYmd(dateStr);
+        switch (task.category) {
+            case 'daily':
+                return !task.startDate || dateStr >= task.startDate;
+            case 'weekly':
+                return (task.weekDays || []).includes(d.getDay());
+            case 'monthly': {
+                const days = task.monthDays || [];
+                if (!days.length) return false;
+                const dim = daysInMonth(d.getFullYear(), d.getMonth());
+                const dom = d.getDate();
+                // תאריך שאינו קיים בחודש קצר (למשל 31) יופיע ביום האחרון של החודש
+                return days.some(n => n === dom || (n > dim && dom === dim));
+            }
+            case 'general':
+                return task.date === dateStr;
         }
+        return false;
+    }
 
-        // פונקציה לחישוב תאריך היעד הבא בהתאם לסוג המחזוריות
-        function calculateNextDueDate(category, recurringValue, timeStr, baseDateObj = new Date()) {
-            let date = new Date(baseDateObj);
-            const now = new Date();
+    // עבור משימה חד פעמית ההשלמה נרשמת על תאריך היעד שלה
+    function occurrenceKey(task, dateStr) { return task.category === 'general' ? (task.date || dateStr) : dateStr; }
+    function isDoneOn(task, dateStr) {
+        const k = occurrenceKey(task, dateStr);
+        return (task.completions || []).some(c => c.date === k);
+    }
+    function isOverdue(task) {
+        return task.category === 'general' && task.date && task.date < todayStr() && !isDoneOn(task, task.date);
+    }
+    function isPendingGeneral(task) {
+        return task.category === 'general' && !(task.completions || []).length;
+    }
 
-            let timePassedToday = false;
-            if (timeStr) {
-                const [h, min] = timeStr.split(':').map(Number);
-                const taskTimeToday = new Date(date);
-                taskTimeToday.setHours(h, min, 0, 0);
-                if (taskTimeToday <= now) timePassedToday = true;
-            }
-
-            if (category === 'daily') {
-                if (timePassedToday && date.toDateString() === now.toDateString()) {
-                    date.setDate(date.getDate() + 1); // למחר
-                }
-                return getTodayDateString(date);
-            }
-
-            if (category === 'weekly') {
-                const targetDay = parseInt(recurringValue); // 0 עד 6
-                let daysToAdd = (targetDay - date.getDay() + 7) % 7;
-                if (daysToAdd === 0 && timePassedToday && date.toDateString() === now.toDateString()) {
-                    daysToAdd = 7; // שבוע הבא
-                }
-                date.setDate(date.getDate() + daysToAdd);
-                return getTodayDateString(date);
-            }
-
-            if (category === 'monthly') {
-                const targetDate = parseInt(recurringValue); // 1 עד 31
-                let nextMonthDate = new Date(date.getFullYear(), date.getMonth(), targetDate);
-                
-                // טיפול בחודשים קצרים (למשל 31 בפברואר)
-                if (nextMonthDate.getMonth() !== date.getMonth() && targetDate > 28) {
-                    nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-                }
-
-                if (nextMonthDate < now || (nextMonthDate.toDateString() === now.toDateString() && timePassedToday)) {
-                    nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 1, targetDate);
-                    if (nextMonthDate.getMonth() !== (date.getMonth() + 1) % 12) {
-                        nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 2, 0);
-                    }
-                }
-                return getTodayDateString(nextMonthDate);
-            }
-
-            // כללי (חד פעמי)
-            return recurringValue; // מחזיר את תאריך ה-YYYY-MM-DD השמור
+    function nextOccurrence(task, includeToday = true) {
+        if (task.category === 'general') return task.date || null;
+        const start = includeToday ? 0 : 1;
+        for (let i = start; i < 400; i++) {
+            const ds = ymd(addDays(new Date(), i));
+            if (isDueOn(task, ds) && !isDoneOn(task, ds)) return ds;
         }
+        return null;
+    }
 
-        /* --- עדכון טופס משימה בהתאם לסוג --- */
-        function updateFormForCategory() {
-            const cat = document.getElementById('task-category').value;
-            const label = document.getElementById('date-label');
-            const inDaily = document.getElementById('input-daily');
-            const inWeekly = document.getElementById('input-weekly');
-            const inMonthly = document.getElementById('input-monthly');
-            const inGeneral = document.getElementById('input-general');
+    function tasksForToday() {
+        const t = todayStr();
+        return tasks.filter(x => isDueOn(x, t) || isOverdue(x));
+    }
 
-            inDaily.classList.add('hidden');
-            inWeekly.classList.add('hidden');
-            inMonthly.classList.add('hidden');
-            inGeneral.classList.add('hidden');
-
-            if (cat === 'daily') {
-                label.textContent = 'תדירות';
-                inDaily.classList.remove('hidden');
-            } else if (cat === 'weekly') {
-                label.textContent = 'באיזה יום בשבוע?';
-                inWeekly.classList.remove('hidden');
-                // ברירת מחדל היום
-                inWeekly.value = new Date().getDay(); 
-            } else if (cat === 'monthly') {
-                label.textContent = 'באיזה תאריך בחודש?';
-                inMonthly.classList.remove('hidden');
-                inMonthly.value = new Date().getDate();
-            } else if (cat === 'general') {
-                label.textContent = 'תאריך יעד';
-                inGeneral.classList.remove('hidden');
-                inGeneral.value = getTodayDateString();
-            }
+    function scheduleText(task) {
+        if (task.category === 'daily') return 'כל יום';
+        if (task.category === 'weekly') {
+            const d = (task.weekDays || []).slice().sort((a, b) => a - b);
+            if (!d.length) return 'לא נבחרו ימים';
+            if (d.length === 7) return 'כל יום';
+            if (d.length === 5 && d.join() === '0,1,2,3,4') return 'א׳-ה׳';
+            const names = d.map(i => DAY_SHORT[i] + '׳');
+            return (names.length === 1 ? 'ביום ' : 'בימים ') + names.join(', ');
         }
-
-        /* --- שמירה ויצירת משימה --- */
-        async function handleSaveTask(e) {
-            e.preventDefault();
-            const id = document.getElementById('task-id').value || 'task_' + Date.now();
-            const title = document.getElementById('task-title').value.trim();
-            const desc = document.getElementById('task-desc').value.trim();
-            const category = document.getElementById('task-category').value;
-            const priority = document.getElementById('task-priority').value;
-            const dueTime = document.getElementById('task-due-time').value;
-            
-            if (!title) return;
-
-            // חילוץ ערך המחזוריות לפי שדה הקלט הפעיל
-            let recurringValue = '';
-            if (category === 'weekly') recurringValue = document.getElementById('input-weekly').value;
-            else if (category === 'monthly') recurringValue = document.getElementById('input-monthly').value;
-            else if (category === 'general') recurringValue = document.getElementById('input-general').value;
-            // daily לא צריך value מיוחד
-
-            // חישוב תאריך היעד הבא בפועל (כדי שנדע מתי להקפיץ)
-            const dueDate = calculateNextDueDate(category, recurringValue, dueTime, new Date());
-
-            const existingIndex = tasks.findIndex(t => t.id === id);
-            const isCompleted = existingIndex > -1 ? tasks[existingIndex].completed : false;
-
-            const taskData = {
-                id, title, desc, category, priority, 
-                recurringValue, // שומרים את הגדרת המחזוריות המקורית
-                dueDate, dueTime,
-                image: attachedImageBase64 || (existingIndex > -1 ? tasks[existingIndex].image : null),
-                audio: (typeof recordedAudioBlob === 'string') ? recordedAudioBlob : (existingIndex > -1 ? tasks[existingIndex].audio : null),
-                completed: isCompleted,
-                notified: false,
-                updatedAt: new Date().toISOString()
-            };
-
-            if (recordedAudioBlob instanceof Blob) taskData.audio = await blobToBase64(recordedAudioBlob);
-
-            if (existingIndex > -1) { tasks[existingIndex] = taskData; showToast('המשימה עודכנה'); }
-            else { tasks.push(taskData); showToast('משימה חדשה נוספה!'); }
-
-            await saveTaskToDB(taskData);
-            sortTasks();
-            if (!isCompleted && activeTab !== category && activeTab !== 'completed') setActiveTab(category);
-            else { renderTasks(); updateProgressWidget(); }
-            closeTaskModal();
+        if (task.category === 'monthly') {
+            const d = (task.monthDays || []).slice().sort((a, b) => a - b);
+            if (!d.length) return 'לא נבחרו תאריכים';
+            return (d.length === 1 ? 'ב-' : 'בתאריכים ') + d.join(', ') + ' לחודש';
         }
+        return relativeDateLabel(task.date);
+    }
 
-        /* --- השלמת משימה ושכפול מחזורי --- */
-        async function toggleTaskCompletion(id) {
-            const task = tasks.find(t => t.id === id);
-            if (!task) return;
+    /* ============================================================
+       רינדור הממשק
+       ============================================================ */
+    function escapeHtml(str) {
+        return !str ? '' : String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
 
-            const wasCompleted = task.completed;
-            task.completed = !task.completed;
-            task.completedAt = task.completed ? new Date().toISOString() : null;
+    function navIcon(tab) {
+        const paths = {
+            daily: 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z',
+            weekly: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+            monthly: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+            general: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+            completed: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+        };
+        return `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${paths[tab]}"></path></svg>`;
+    }
 
-            if (task.completed) {
-                // מסמן כהושלמה
-                task.notified = true;
-                playCompletionBeep();
-                showToast('משימה הושלמה! ✅');
-                checkIfAllDailyCompleted();
+    function tabCounts() {
+        const t = todayStr();
+        return {
+            daily: tasksForToday().filter(x => !isDoneOn(x, t)).length,
+            weekly: tasks.filter(x => x.category === 'weekly').length,
+            monthly: tasks.filter(x => x.category === 'monthly').length,
+            general: tasks.filter(isPendingGeneral).length,
+            completed: tasks.reduce((n, x) => n + (x.completions || []).filter(c => (c.at || '').slice(0, 10) === t).length, 0)
+        };
+    }
 
-                // יצירת עותק עתידי אם המשימה מחזורית
-                if (task.category !== 'general') {
-                    // חשב את התאריך הבא ביחס ל-עכשיו (כדי לא לצבור פיגורים אם שכחנו לסמן)
-                    const nextDueDate = calculateNextDueDate(task.category, task.recurringValue, task.dueTime, new Date());
-                    
-                    const cloneId = 'task_' + Date.now() + Math.floor(Math.random()*1000);
-                    const cloneTask = { ...task, id: cloneId, completed: false, completedAt: null, dueDate: nextDueDate, notified: false };
-                    
-                    task.nextInstanceId = cloneId; // שומרים רפרנס למקרה של ביטול
-                    tasks.push(cloneTask);
-                    await saveTaskToDB(cloneTask);
-                }
+    function renderNav() {
+        const counts = tabCounts();
+        const bottom = document.getElementById('bottom-nav');
+        const top = document.getElementById('top-tabs');
+
+        bottom.innerHTML = `<div class="flex items-stretch">` + TABS.map(tab => {
+            const c = CATEGORIES[tab], active = activeTab === tab, n = counts[tab];
+            return `<button onclick="setActiveTab('${tab}')" aria-current="${active ? 'page' : 'false'}" class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 relative transition-colors ${active ? 'text-brand-600 dark:text-gold-400' : 'text-slate-400 dark:text-slate-500'}">
+                <span class="relative">${navIcon(tab)}${n > 0 ? `<span class="absolute -top-1.5 -left-2 min-w-[16px] h-4 px-1 rounded-full ${active ? 'bg-brand-600 dark:bg-gold-500 text-white dark:text-slate-900' : 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-200'} text-[9px] font-bold flex items-center justify-center">${n > 99 ? '99+' : n}</span>` : ''}</span>
+                <span class="text-[10px] font-bold">${c.label}</span>
+                ${active ? '<span class="absolute top-0 inset-x-4 h-0.5 rounded-full bg-brand-600 dark:bg-gold-400"></span>' : ''}
+            </button>`;
+        }).join('') + `</div>`;
+
+        top.innerHTML = TABS.map(tab => {
+            const c = CATEGORIES[tab], active = activeTab === tab, n = counts[tab];
+            return `<button onclick="setActiveTab('${tab}')" class="snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap ${active
+                ? 'bg-white dark:bg-slate-700 shadow-sm text-brand-600 dark:text-gold-400 font-bold border border-slate-200/50 dark:border-slate-600/50'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50'}">
+                <span>${c.icon}</span> ${c.label}
+                <span class="text-[10px] px-2 py-0.5 rounded-full ${active ? 'bg-brand-50 dark:bg-slate-800 text-brand-700 dark:text-gold-400 font-bold' : 'bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400'}">${n}</span>
+            </button>`;
+        }).join('');
+    }
+
+    function setActiveTab(tab) {
+        activeTab = tab;
+        doneSectionOpen = false;
+        document.getElementById('daily-progress-widget').classList.toggle('hidden', tab !== 'daily');
+        const c = CATEGORIES[tab];
+        document.getElementById('view-title').textContent = c.title;
+        document.getElementById('view-subtitle').textContent = c.sub;
+        renderTasks();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function matchesFilters(task) {
+        const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
+        const priorityFilter = document.getElementById('filter-priority').value;
+        if (searchVal && !((task.title || '').toLowerCase().includes(searchVal) || (task.desc || '').toLowerCase().includes(searchVal))) return false;
+        if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+        return true;
+    }
+
+    function emptyState(icon, title, text) {
+        return `<div class="flex flex-col items-center justify-center p-10 text-center bg-white dark:bg-slate-800/60 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 anim-in">
+            <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center text-3xl mb-3">${icon}</div>
+            <h4 class="font-bold text-base text-slate-700 dark:text-slate-200">${title}</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-[16rem] leading-relaxed">${text}</p>
+        </div>`;
+    }
+
+    function renderTasks() {
+        renderNav();
+        updateProgressWidget();
+        lastRenderedDay = todayStr();
+        const container = document.getElementById('tasks-container');
+        const t = todayStr();
+
+        if (activeTab === 'completed') { container.innerHTML = renderCompletedList(); return; }
+
+        if (activeTab === 'daily') {
+            const all = tasksForToday().filter(matchesFilters);
+            const pending = all.filter(x => !isDoneOn(x, t)).sort(sortForToday);
+            const done = all.filter(x => isDoneOn(x, t));
+            let html = '';
+            if (!pending.length && !done.length) {
+                html = emptyState('📝', 'אין משימות להיום', 'הוסף משימה חדשה עם הכפתור למטה. משימות שבועיות, חודשיות וחד פעמיות יופיעו כאן אוטומטית ביום שלהן.');
+            } else if (!pending.length) {
+                html = `<div class="rounded-3xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 p-8 text-center anim-in">
+                    <div class="text-4xl mb-2">🎉</div>
+                    <h4 class="font-black text-lg text-emerald-700 dark:text-emerald-300">סיימת את כל המשימות להיום!</h4>
+                    <p class="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">המשימות המחזוריות יחזרו מחר.</p>
+                </div>`;
             } else {
-                // ביטול השלמה
-                task.notified = false;
-                // אם נוצר עותק מחזורי, נמחק אותו
-                if (task.nextInstanceId) {
-                    const cloneIdx = tasks.findIndex(t => t.id === task.nextInstanceId);
-                    if (cloneIdx > -1) {
-                        await deleteTaskFromDB(task.nextInstanceId);
-                        tasks.splice(cloneIdx, 1);
-                    }
-                    delete task.nextInstanceId;
-                }
+                html = pending.map(task => renderTaskCard(task, t, { interactive: true })).join('');
             }
-
-            await saveTaskToDB(task);
-            sortTasks(); renderTasks(); updateProgressWidget();
-        }
-
-
-        /* --- רינדור ממשק (UI) --- */
-        function sortTasks() {
-            tasks.sort((a, b) => {
-                if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                const dateA = a.dueDate ? new Date(`${a.dueDate}T${a.dueTime || '00:00'}`) : new Date(8640000000000000);
-                const dateB = b.dueDate ? new Date(`${b.dueDate}T${b.dueTime || '00:00'}`) : new Date(8640000000000000);
-                return dateA - dateB;
-            });
-        }
-
-        function getRecurrenceBadgeString(task) {
-            if (task.category === 'daily') return '🔄 מחזורי: כל יום';
-            if (task.category === 'weekly') return `🔄 מחזורי: כל יום ${DAY_NAMES[parseInt(task.recurringValue)]}`;
-            if (task.category === 'monthly') return `🔄 מחזורי: ב-${task.recurringValue} לחודש`;
-            return 'חד פעמי';
-        }
-
-        function renderTasks() {
-            const container = document.getElementById('tasks-container');
-            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
-            const priorityFilter = document.getElementById('filter-priority').value;
-            
-            let counts = { daily: 0, weekly: 0, monthly: 0, general: 0, completed: 0 };
-            tasks.forEach(t => {
-                if (t.completed) counts.completed++;
-                else counts[t.category || 'daily'] = (counts[t.category || 'daily'] || 0) + 1;
-            });
-
-            ['daily', 'weekly', 'monthly', 'general', 'completed'].forEach(cat => {
-                document.getElementById(`badge-${cat}`).textContent = counts[cat];
-            });
-
-            const filtered = tasks.filter(task => {
-                if (activeTab === 'completed' && !task.completed) return false;
-                if (activeTab !== 'completed' && (task.completed || (task.category || 'daily') !== activeTab)) return false;
-                if (searchVal && !((task.title && task.title.toLowerCase().includes(searchVal)) || (task.desc && task.desc.toLowerCase().includes(searchVal)))) return false;
-                if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
-                return true;
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-800/60 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 my-auto"><div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center text-3xl mb-3">📝</div><h4 class="font-bold text-base text-slate-700 dark:text-slate-300">אין משימות להצגה</h4></div>`;
-                return;
+            if (done.length) {
+                html += `<button onclick="toggleDoneSection()" class="mt-1 w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300">
+                    <span class="flex items-center gap-2">✅ הושלמו היום <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">${done.length}</span></span>
+                    <svg class="w-4 h-4 transition-transform ${doneSectionOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>`;
+                if (doneSectionOpen) html += done.map(task => renderTaskCard(task, t, { interactive: true })).join('');
             }
-            container.innerHTML = filtered.map(task => renderTaskCard(task)).join('');
+            container.innerHTML = html;
+            return;
         }
 
-        function renderTaskCard(task) {
-            const todayStr = getTodayDateString();
-            const isOverdue = task.dueDate && task.dueDate < todayStr && !task.completed;
-            const isToday = task.dueDate === todayStr;
+        // לשוניות שבועי / חודשי / כללי - ניהול ההגדרות
+        let list = tasks.filter(x => x.category === activeTab).filter(matchesFilters);
+        if (activeTab === 'general') list = list.filter(isPendingGeneral);
 
-            let priorityBadge = task.priority === 'high' ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">דחוף 🔥</span>` :
-                                task.priority === 'medium' ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gold-100 text-gold-700 dark:bg-gold-900/60 dark:text-gold-300">בינוני ⚡</span>` :
-                                `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">רגיל 🌱</span>`;
+        if (!list.length) {
+            const empties = {
+                weekly: ['📅', 'אין משימות שבועיות', 'משימה שבועית חוזרת בימים שתבחר - ואפשר לבחור כמה ימים בשבוע.'],
+                monthly: ['🗓️', 'אין משימות חודשיות', 'משימה חודשית חוזרת בתאריכים שתבחר - ואפשר לבחור כמה תאריכים בחודש.'],
+                general: ['💡', 'אין משימות כלליות', 'משימה חד פעמית עם תאריך יעד. ביום היעד היא תופיע ברשימת "היום".']
+            }[activeTab];
+            container.innerHTML = emptyState(empties[0], empties[1], empties[2]);
+            return;
+        }
 
-            let dueDisplay = '';
-            if (task.dueDate) {
-                const parts = task.dueDate.split('-');
-                const formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                const time = task.dueTime ? ` | 🔔 ${task.dueTime}` : '';
-                
-                if (isOverdue) dueDisplay = `<span class="text-rose-600 dark:text-rose-400 font-bold">⚠️ באיחור: ${formatted}${time}</span>`;
-                else if (isToday) dueDisplay = `<span class="text-brand-600 dark:text-brand-400 font-bold">⏰ להיום${time}</span>`;
-                else dueDisplay = `<span class="text-slate-500 font-medium">📅 ${formatted}${time}</span>`;
-            }
+        list.sort((a, b) => {
+            const an = nextOccurrence(a) || '9999', bn = nextOccurrence(b) || '9999';
+            if (an !== bn) return an < bn ? -1 : 1;
+            return (a.dueTime || '99:99') < (b.dueTime || '99:99') ? -1 : 1;
+        });
+        container.innerHTML = list.map(task => renderTaskCard(task, t, { interactive: isDueOn(task, t) || isOverdue(task) })).join('');
+    }
 
-            const recrText = task.category !== 'general' ? `<span class="text-[10px] text-brand-600 dark:text-gold-400 font-semibold bg-brand-50 dark:bg-slate-700 px-2 py-0.5 rounded-md">${getRecurrenceBadgeString(task)}</span>` : '';
+    function sortForToday(a, b) {
+        const ao = isOverdue(a), bo = isOverdue(b);
+        if (ao !== bo) return ao ? -1 : 1;
+        const at = a.dueTime || '99:99', bt = b.dueTime || '99:99';
+        if (at !== bt) return at < bt ? -1 : 1;
+        const p = { high: 0, medium: 1, low: 2 };
+        return (p[a.priority] ?? 1) - (p[b.priority] ?? 1);
+    }
 
-            return `
-                <div class="group bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-200/80 dark:border-slate-700/80 transition-all flex flex-col gap-3 relative ${task.completed ? 'opacity-70 bg-slate-50 dark:bg-slate-800/40' : ''}">
-                    <div class="flex items-start gap-3">
-                        <button onclick="toggleTaskCompletion('${task.id}')" class="mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 hover:border-brand-500'}">
-                            ${task.completed ? `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : ''}
-                        </button>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap mb-1.5">
-                                ${priorityBadge}
-                                ${recrText}
-                                <span class="text-[11px]">${dueDisplay}</span>
-                            </div>
-                            <h3 class="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 ${task.completed ? 'task-completed' : ''} break-words">${escapeHtml(task.title)}</h3>
-                            ${task.desc ? `<p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHtml(task.desc)}</p>` : ''}
+    const PRIORITY_META = {
+        high: { label: 'דחוף 🔥', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300', bar: 'bg-rose-500' },
+        medium: { label: 'בינוני ⚡', cls: 'bg-gold-100 text-gold-700 dark:bg-gold-900/60 dark:text-gold-300', bar: 'bg-gold-400' },
+        low: { label: 'רגיל 🌱', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300', bar: 'bg-emerald-400' }
+    };
+
+    function renderTaskCard(task, dateStr, opts = {}) {
+        const done = isDoneOn(task, dateStr);
+        const overdue = isOverdue(task);
+        const dueToday = isDueOn(task, dateStr);
+        const pm = PRIORITY_META[task.priority] || PRIORITY_META.medium;
+        const time = task.dueTime ? `🔔 ${task.dueTime}` : '';
+
+        let whenChip = '';
+        if (activeTab === 'daily') {
+            if (overdue) whenChip = `<span class="text-rose-600 dark:text-rose-400 font-bold">⚠️ באיחור מ-${formatDate(task.date)}</span>`;
+            else if (task.dueTime) whenChip = `<span class="text-brand-600 dark:text-brand-300 font-bold">${time}</span>`;
+            else whenChip = `<span class="text-slate-400">ללא שעה</span>`;
+        } else {
+            const next = nextOccurrence(task);
+            const nextLabel = next ? relativeDateLabel(next) : 'אין מועד עתידי';
+            whenChip = `<span class="text-slate-500 dark:text-slate-400 font-medium">${dueToday && !done ? '⏰ היום' : '📅 ' + nextLabel}${task.dueTime ? ' · ' + task.dueTime : ''}</span>`;
+        }
+
+        const recrText = task.category !== 'general'
+            ? `<span class="text-[10px] text-brand-600 dark:text-gold-400 font-semibold bg-brand-50 dark:bg-slate-700 px-2 py-0.5 rounded-md">🔄 ${escapeHtml(scheduleText(task))}</span>`
+            : `<span class="text-[10px] text-slate-500 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">חד פעמי</span>`;
+
+        const checkbox = opts.interactive
+            ? `<button onclick="toggleOccurrence('${task.id}')" aria-label="${done ? 'בטל סימון' : 'סמן כהושלם'}" class="mt-0.5 shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 hover:border-brand-500 active:scale-90'}">
+                ${done ? `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : ''}
+               </button>`
+            : `<span class="mt-0.5 shrink-0 w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center text-[10px] font-bold" title="ניתן לסמן ביום הביצוע">🔄</span>`;
+
+        return `
+            <div class="task-card group bg-white dark:bg-slate-800 rounded-2xl p-4 pr-3 shadow-sm hover:shadow-md border border-slate-200/80 dark:border-slate-700/80 transition-all flex flex-col gap-3 relative overflow-hidden anim-in ${done ? 'opacity-60' : ''}" data-id="${task.id}">
+                <span class="absolute top-0 bottom-0 right-0 w-1 ${overdue ? 'bg-rose-500' : pm.bar}"></span>
+                <div class="flex items-start gap-3">
+                    ${checkbox}
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap mb-1.5 text-[11px]">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${pm.cls}">${pm.label}</span>
+                            ${recrText}
+                            ${whenChip}
                         </div>
-                        <div class="flex items-center gap-1">
-                            <button onclick="openEditTaskModal('${task.id}')" title="ערוך משימה" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                            <button onclick="confirmDeleteTask('${task.id}')" title="מחק משימה" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                        </div>
+                        <h3 class="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 ${done ? 'task-completed' : ''} break-words">${escapeHtml(task.title)}</h3>
+                        ${task.desc ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 break-words">${escapeHtml(task.desc)}</p>` : ''}
                     </div>
-                    ${(task.audio || task.image) ? `
-                        <div class="flex items-center gap-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 mt-1">
-                            ${task.image ? `<img src="${task.image}" onclick="openLightbox('${task.image}')" class="w-16 h-16 object-cover rounded-xl border border-slate-200 cursor-pointer">` : ''}
-                            ${task.audio ? `<div class="flex-1 bg-slate-50 dark:bg-slate-900/80 p-2 rounded-xl border flex items-center gap-2"><span class="text-xs">🎙️</span><audio controls src="${task.audio}" class="w-full h-8 outline-none"></audio></div>` : ''}
-                        </div>
-                    ` : ''}
+                    <div class="flex items-center gap-0.5 shrink-0">
+                        <button onclick="openEditTaskModal('${task.id}')" title="ערוך משימה" aria-label="ערוך משימה" class="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                        <button onclick="confirmDeleteTask('${task.id}')" title="מחק משימה" aria-label="מחק משימה" class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                    </div>
                 </div>
-            `;
+                ${(task.audio || task.image) ? `
+                    <div class="flex items-center gap-3 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                        ${task.image ? `<img src="${task.image}" onclick="openLightbox(this.src)" alt="תמונת משימה" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-600 cursor-pointer">` : ''}
+                        ${task.audio ? `<div class="flex-1 bg-slate-50 dark:bg-slate-900/80 p-2 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-2"><span class="text-xs">🎙️</span><audio controls preload="none" src="${task.audio}" class="w-full h-8 outline-none"></audio></div>` : ''}
+                    </div>` : ''}
+            </div>`;
+    }
+
+    function renderCompletedList() {
+        const rows = [];
+        tasks.forEach(task => (task.completions || []).forEach(c => rows.push({ task, c })));
+        const filtered = rows.filter(r => matchesFilters(r.task));
+        if (!filtered.length) {
+            return emptyState('✅', 'עדיין לא הושלמו משימות', 'כל משימה שתסמן כבוצעה תופיע כאן, מסודרת לפי יום.');
         }
+        filtered.sort((a, b) => String(b.c.at || b.c.date).localeCompare(String(a.c.at || a.c.date)));
+        const limited = filtered.slice(0, 300);
 
-        /* --- מודאל עריכה ושאר ירקות --- */
-        function openEditTaskModal(id) {
-            const task = tasks.find(t => t.id === id);
-            if (!task) return;
-            resetSpeechUI();
-            document.getElementById('task-id').value = task.id;
-            document.getElementById('modal-task-heading').textContent = 'עריכת משימה';
-            document.getElementById('task-title').value = task.title;
-            document.getElementById('task-desc').value = task.desc || '';
-            document.getElementById('task-category').value = task.category || 'daily';
-            document.getElementById('task-priority').value = task.priority || 'medium';
-            document.getElementById('task-due-time').value = task.dueTime || '';
+        let html = '', lastDay = null;
+        limited.forEach(({ task, c }) => {
+            const day = (c.at || '').slice(0, 10) || c.date;
+            if (day !== lastDay) {
+                lastDay = day;
+                const count = limited.filter(r => ((r.c.at || '').slice(0, 10) || r.c.date) === day).length;
+                html += `<div class="flex items-center gap-2 mt-2 first:mt-0 px-1">
+                    <h4 class="text-xs font-black text-slate-500 dark:text-slate-400">${relativeDateLabel(day)}</h4>
+                    <span class="text-[10px] text-slate-400">${count} משימות</span>
+                    <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                </div>`;
+            }
+            const at = c.at ? new Date(c.at) : null;
+            const timeLabel = at ? `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}` : '';
+            html += `<div class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-3 anim-in">
+                <span class="w-7 h-7 shrink-0 rounded-lg bg-emerald-500 text-white flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></span>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-sm text-slate-700 dark:text-slate-200 task-completed break-words">${escapeHtml(task.title)}</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">${CATEGORIES[task.category].icon} ${escapeHtml(scheduleText(task))}${timeLabel ? ' · הושלם ב-' + timeLabel : ''}</p>
+                </div>
+                <button onclick="uncompleteOccurrence('${task.id}','${c.date}')" title="החזר לרשימה" aria-label="החזר לרשימה" class="shrink-0 p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+            </div>`;
+        });
+        if (filtered.length > limited.length) html += `<p class="text-center text-[11px] text-slate-400 py-2">מוצגות 300 ההשלמות האחרונות</p>`;
+        return html;
+    }
 
-            // טעינת הגדרות התאריך לממשק
-            updateFormForCategory();
-            if(task.category === 'weekly') document.getElementById('input-weekly').value = task.recurringValue;
-            if(task.category === 'monthly') document.getElementById('input-monthly').value = task.recurringValue;
-            if(task.category === 'general') document.getElementById('input-general').value = task.recurringValue || task.dueDate;
+    function updateProgressWidget() {
+        const t = todayStr();
+        const list = tasksForToday();
+        const total = list.length, completed = list.filter(x => isDoneOn(x, t)).length;
+        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+        document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+        document.getElementById('progress-percent').textContent = `${percent}%`;
+        document.getElementById('progress-subtitle').textContent = total ? `${completed} מתוך ${total} משימות הושלמו` : 'אין משימות מתוזמנות להיום';
+        document.getElementById('progress-title').textContent = (total > 0 && completed === total) ? 'כל הכבוד! סיימת הכל! 🚀' : (completed > 0 ? 'קצב מעולה! ממשיכים' : 'היום שלך מתחיל כאן');
+    }
 
-            attachedImageBase64 = task.image || null;
-            if (task.image) {
-                document.getElementById('image-preview-element').src = task.image;
-                document.getElementById('image-preview-box').classList.remove('hidden');
-            } else document.getElementById('image-preview-box').classList.add('hidden');
+    function toggleDoneSection() { doneSectionOpen = !doneSectionOpen; renderTasks(); }
 
-            recordedAudioBlob = task.audio || null;
-            if (task.audio) {
-                document.getElementById('audio-preview-element').src = task.audio;
-                document.getElementById('audio-preview-box').classList.remove('hidden');
-            } else document.getElementById('audio-preview-box').classList.add('hidden');
+    /* ============================================================
+       השלמה / ביטול השלמה
+       ============================================================ */
+    async function toggleOccurrence(id, dateStr) {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+        const ds = dateStr || todayStr();
+        if (isDoneOn(task, ds)) await uncompleteOccurrence(id, occurrenceKey(task, ds));
+        else await completeOccurrence(id, ds);
+    }
 
-            document.getElementById('task-modal').classList.remove('hidden');
+    async function completeOccurrence(id, dateStr) {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+        const key = occurrenceKey(task, dateStr || todayStr());
+        if (isDoneOn(task, key)) return;
+        task.completions = dedupeCompletions([{ date: key, at: new Date().toISOString() }, ...(task.completions || [])]);
+        task.snoozeUntil = null;
+        task.updatedAt = new Date().toISOString();
+        await saveTaskToDB(task);
+        buzz(20);
+        playCompletionBeep();
+        const t = todayStr();
+        const list = tasksForToday();
+        const allDone = list.length > 0 && list.every(x => isDoneOn(x, t));
+        showToast(allDone ? 'סיימת את כל המשימות להיום! 🎉' : 'משימה הושלמה! ✅', allDone ? '🎉' : '✅');
+        if (allDone) triggerConfetti();
+        renderTasks();
+        scheduleReminders();
+    }
+
+    async function uncompleteOccurrence(id, dateKey) {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+        task.completions = (task.completions || []).filter(c => c.date !== dateKey);
+        task.updatedAt = new Date().toISOString();
+        await saveTaskToDB(task);
+        showToast('המשימה חזרה לרשימה', '↩️');
+        renderTasks();
+        scheduleReminders();
+    }
+
+    /* ============================================================
+       יצירה / עריכה / מחיקה
+       ============================================================ */
+    function currentCategory() { return document.getElementById('task-category').value; }
+
+    function renderCategoryChips() {
+        const cur = currentCategory();
+        document.getElementById('category-chips').innerHTML = ['daily', 'weekly', 'monthly', 'general'].map(cat => {
+            const c = CATEGORIES[cat], active = cat === cur;
+            return `<button type="button" onclick="selectCategory('${cat}')" class="py-2 px-1 rounded-xl border text-[11px] font-bold flex flex-col items-center gap-0.5 transition ${active
+                ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}">
+                <span class="text-base leading-none">${c.icon}</span>${c.label}</button>`;
+        }).join('');
+    }
+
+    function selectCategory(cat) {
+        document.getElementById('task-category').value = cat;
+        renderCategoryChips();
+        updateFormForCategory();
+    }
+
+    function renderWeekdayChips() {
+        document.getElementById('weekday-chips').innerHTML = DAY_SHORT.map((d, i) => {
+            const active = selectedWeekDays.includes(i);
+            return `<button type="button" onclick="toggleWeekday(${i})" aria-pressed="${active}" title="יום ${DAY_NAMES[i]}" class="aspect-square rounded-xl border text-sm font-bold transition ${active
+                ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300'}">${d}</button>`;
+        }).join('');
+    }
+    function toggleWeekday(i) {
+        selectedWeekDays = selectedWeekDays.includes(i) ? selectedWeekDays.filter(x => x !== i) : [...selectedWeekDays, i].sort((a, b) => a - b);
+        renderWeekdayChips();
+    }
+    function setWeekdayPreset(p) {
+        selectedWeekDays = p === 'all' ? [0, 1, 2, 3, 4, 5, 6] : p === 'week' ? [0, 1, 2, 3, 4] : [];
+        renderWeekdayChips();
+    }
+
+    function renderMonthdayChips() {
+        let html = '';
+        for (let i = 1; i <= 31; i++) {
+            const active = selectedMonthDays.includes(i);
+            html += `<button type="button" onclick="toggleMonthday(${i})" aria-pressed="${active}" class="aspect-square rounded-lg border text-xs font-bold transition ${active
+                ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300'}">${i}</button>`;
         }
+        document.getElementById('monthday-chips').innerHTML = html;
+    }
+    function toggleMonthday(i) {
+        selectedMonthDays = selectedMonthDays.includes(i) ? selectedMonthDays.filter(x => x !== i) : [...selectedMonthDays, i].sort((a, b) => a - b);
+        renderMonthdayChips();
+    }
+    function setMonthdayPreset(p) {
+        selectedMonthDays = p === 'first' ? [1] : p === 'last' ? [31] : [];
+        renderMonthdayChips();
+    }
+    function setGeneralDateOffset(n) { document.getElementById('general-date').value = ymd(addDays(new Date(), n)); }
+    function setDueTime(v) { document.getElementById('task-due-time').value = v; }
 
-        // --- שאר הפונקציות לא השתנו (מולטימדיה, גיבוי, תצוגה) ---
-        function initDateHeader() { document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' }); }
-        function initDarkMode() { if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); document.getElementById('theme-icon-dark').classList.remove('hidden'); document.getElementById('theme-icon-light').classList.add('hidden'); } }
-        function toggleDarkMode() { const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', isDark ? 'dark' : 'light'); document.getElementById('theme-icon-dark').classList.toggle('hidden', !isDark); document.getElementById('theme-icon-light').classList.toggle('hidden', isDark); }
-        function setActiveTab(tab) {
-            activeTab = tab;
-            ['daily', 'weekly', 'monthly', 'general', 'completed'].forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
-                const badge = document.getElementById(`badge-${t}`);
-                if (t === tab) {
-                    btn.className = 'snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 shadow-sm text-brand-600 dark:text-gold-400 font-bold border border-slate-200/50 dark:border-slate-600/50 whitespace-nowrap';
-                    badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-brand-50 dark:bg-slate-800 text-brand-700 dark:text-gold-400 font-bold shadow-sm';
-                } else {
-                    btn.className = 'snap-center shrink-0 py-2 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50 whitespace-nowrap';
-                    badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-900 text-slate-500 dark:text-slate-400 transition-colors';
-                }
+    function updateFormForCategory() {
+        const cat = currentCategory();
+        const label = document.getElementById('date-label');
+        ['daily', 'weekly', 'monthly', 'general'].forEach(c => document.getElementById('input-' + c).classList.add('hidden'));
+        document.getElementById('input-' + cat).classList.remove('hidden');
+        label.textContent = { daily: 'תדירות', weekly: 'באילו ימים בשבוע?', monthly: 'באילו תאריכים בחודש?', general: 'תאריך יעד' }[cat];
+        if (cat === 'weekly') { if (!selectedWeekDays.length) selectedWeekDays = [new Date().getDay()]; renderWeekdayChips(); }
+        if (cat === 'monthly') { if (!selectedMonthDays.length) selectedMonthDays = [new Date().getDate()]; renderMonthdayChips(); }
+        if (cat === 'general' && !document.getElementById('general-date').value) setGeneralDateOffset(0);
+    }
+
+    async function handleSaveTask(e) {
+        e.preventDefault();
+        const title = document.getElementById('task-title').value.trim();
+        if (!title) { showToast('צריך למלא שם משימה', '⚠️'); return; }
+        const category = currentCategory();
+
+        if (category === 'weekly' && !selectedWeekDays.length) { showToast('בחר לפחות יום אחד בשבוע', '📅'); return; }
+        if (category === 'monthly' && !selectedMonthDays.length) { showToast('בחר לפחות תאריך אחד בחודש', '🗓️'); return; }
+        const generalDate = document.getElementById('general-date').value;
+        if (category === 'general' && !generalDate) { showToast('בחר תאריך יעד', '📆'); return; }
+
+        const id = document.getElementById('task-id').value || 'task_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        const existing = tasks.find(t => t.id === id);
+
+        const task = {
+            id,
+            title,
+            desc: document.getElementById('task-desc').value.trim(),
+            category,
+            priority: document.getElementById('task-priority').value,
+            dueTime: document.getElementById('task-due-time').value || '',
+            weekDays: category === 'weekly' ? selectedWeekDays.slice() : [],
+            monthDays: category === 'monthly' ? selectedMonthDays.slice() : [],
+            date: category === 'general' ? generalDate : null,
+            image: attachedImageBase64 || null,
+            audio: (typeof recordedAudioBlob === 'string') ? recordedAudioBlob : (existing ? existing.audio : null),
+            completions: existing ? (existing.completions || []) : [],
+            startDate: existing ? existing.startDate : todayStr(),
+            createdAt: existing ? existing.createdAt : new Date().toISOString(),
+            snoozeUntil: existing ? existing.snoozeUntil : null,
+            updatedAt: new Date().toISOString()
+        };
+        if (recordedAudioBlob instanceof Blob) task.audio = await blobToBase64(recordedAudioBlob);
+
+        // שינוי סוג משימה מאפס את היסטוריית ההשלמות כדי לא להציג מופעים לא רלוונטיים
+        if (existing && existing.category !== category) task.completions = [];
+
+        if (existing) { tasks[tasks.indexOf(existing)] = task; showToast('המשימה עודכנה'); }
+        else { tasks.push(task); showToast('משימה חדשה נוספה!'); }
+
+        await saveTaskToDB(task);
+        closeTaskModal();
+
+        // מעבר ללשונית שבה המשימה תופיע, כדי שהמשתמש יראה אותה
+        const target = isDueOn(task, todayStr()) ? 'daily' : category;
+        if (activeTab !== target) setActiveTab(target); else renderTasks();
+        scheduleReminders();
+    }
+
+    function confirmDeleteTask(id) {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+        openConfirm('למחוק את המשימה?', `"${task.title}" תימחק לצמיתות, כולל התזכורות וההיסטוריה שלה.`, async () => {
+            tasks = tasks.filter(t => t.id !== id);
+            await deleteTaskFromDB(id);
+            closeConfirm();
+            showToast('המשימה נמחקה', '🗑️');
+            renderTasks();
+            scheduleReminders();
+        });
+    }
+
+    function openConfirm(title, text, onOk) {
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-text').textContent = text;
+        const btn = document.getElementById('confirm-ok');
+        btn.onclick = onOk;
+        openModal('confirm-modal');
+    }
+    function closeConfirm() { closeModal('confirm-modal'); }
+
+    function confirmClearAll() {
+        openConfirm('למחוק את כל הנתונים?', 'כל המשימות, ההקלטות והתמונות יימחקו מהמכשיר. מומלץ לייצא גיבוי קודם.', async () => {
+            for (const t of tasks) await deleteTaskFromDB(t.id);
+            tasks = [];
+            try { localStorage.removeItem(LS_TASKS_FALLBACK); } catch (e) {}
+            closeConfirm(); closeSettings();
+            showToast('כל הנתונים נמחקו', '🗑️');
+            renderTasks(); scheduleReminders();
+        });
+    }
+
+    /* ============================================================
+       תזכורות והתראות
+       ============================================================ */
+    function loadFired() {
+        try { firedAlarms = JSON.parse(localStorage.getItem(LS_FIRED) || '{}'); } catch (e) { firedAlarms = {}; }
+        const cutoff = Date.now() - 5 * 86400000;
+        Object.keys(firedAlarms).forEach(k => { if (!firedAlarms[k] || firedAlarms[k] < cutoff) delete firedAlarms[k]; });
+        persistFired();
+    }
+    function persistFired() { try { localStorage.setItem(LS_FIRED, JSON.stringify(firedAlarms)); } catch (e) {} }
+    function markFired(key) { firedAlarms[key] = Date.now(); persistFired(); }
+    function alarmKey(task, dateStr) { return `a|${task.id}|${dateStr}|${task.dueTime}`; }
+    function snoozeKey(task) { return `s|${task.id}|${task.snoozeUntil}`; }
+
+    // כל התזכורות העתידיות ל-14 הימים הקרובים
+    function upcomingReminders(daysAhead = 14) {
+        const out = [], now = Date.now();
+        for (let i = 0; i <= daysAhead; i++) {
+            const ds = ymd(addDays(new Date(), i));
+            tasks.forEach(task => {
+                if (!task.dueTime || !isDueOn(task, ds) || isDoneOn(task, ds)) return;
+                const ts = new Date(`${ds}T${task.dueTime}:00`).getTime();
+                if (isNaN(ts) || ts <= now) return;
+                const key = alarmKey(task, ds);
+                if (firedAlarms[key]) return;
+                out.push({ key, taskId: task.id, title: task.title, body: task.desc || 'הגיע הזמן לבצע את המשימה', ts });
             });
-            document.getElementById('daily-progress-widget').classList.toggle('hidden', tab !== 'daily');
+        }
+        tasks.forEach(task => {
+            if (!task.snoozeUntil) return;
+            const ts = new Date(task.snoozeUntil).getTime();
+            if (isNaN(ts) || ts <= now) return;
+            out.push({ key: snoozeKey(task), taskId: task.id, title: task.title, body: task.desc || 'תזכורת נודניק', ts });
+        });
+        return out.sort((a, b) => a.ts - b.ts);
+    }
+
+    // תזכורות שהגיע זמנן וטרם הוצגו
+    function dueReminders() {
+        const now = Date.now(), ds = todayStr(), res = [];
+        tasks.forEach(task => {
+            if (task.snoozeUntil) {
+                const ts = new Date(task.snoozeUntil).getTime();
+                const key = snoozeKey(task);
+                if (ts <= now && !firedAlarms[key] && !isDoneOn(task, ds)) { res.push({ task, key, ts }); return; }
+            }
+            if (!task.dueTime || !isDueOn(task, ds) || isDoneOn(task, ds)) return;
+            const ts = new Date(`${ds}T${task.dueTime}:00`).getTime();
+            const key = alarmKey(task, ds);
+            if (ts <= now && !firedAlarms[key]) res.push({ task, key, ts });
+        });
+        return res.sort((a, b) => a.ts - b.ts);
+    }
+
+    // תזכורת שעבר זמנה מזמן (למשל האפליקציה הייתה סגורה כל היום) לא תצלצל -
+    // אין טעם להקפיץ אזעקה על משימה של הבוקר בשעה 20:00. במקום זה נעדכן בעדינות.
+    const ALARM_GRACE_MS = 60 * 60 * 1000;
+
+    function checkAlarms() {
+        // גלגול יום - מרעננים את התצוגה בחצות
+        if (lastRenderedDay && lastRenderedDay !== todayStr()) { renderTasks(); scheduleReminders(); }
+
+        const due = dueReminders();
+        if (!due.length) return;
+        const now = Date.now();
+        let missed = 0;
+        due.forEach(d => {
+            markFired(d.key);
+            if (d.key.startsWith('s|') && d.task.snoozeUntil) { d.task.snoozeUntil = null; saveTaskToDB(d.task); }
+            if (now - d.ts > ALARM_GRACE_MS) { missed++; return; }
+            if (!alarmQueue.some(q => q.task.id === d.task.id)) alarmQueue.push(d);
+        });
+        if (missed) showToast(`${missed === 1 ? 'תזכורת אחת' : missed + ' תזכורות'} מהיום ממתינות לך ברשימה`, '⏰');
+        processAlarmQueue();
+        scheduleReminders();
+    }
+
+    function processAlarmQueue() {
+        if (activeAlarmTask || !alarmQueue.length) return;
+        const next = alarmQueue.shift();
+        const task = tasks.find(t => t.id === next.task.id);
+        if (!task) return processAlarmQueue();
+        if (document.visibilityState === 'visible') triggerAlarmPopup(task, next.ts);
+        else { showSystemNotification(task); processAlarmQueue(); }
+    }
+
+    function triggerAlarmPopup(task, ts) {
+        activeAlarmTask = task;
+        const when = ts ? new Date(ts) : new Date();
+        document.getElementById('alarm-time').textContent = `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')} · ${relativeDateLabel(ymd(when))}`;
+        document.getElementById('alarm-title').textContent = task.title;
+        document.getElementById('alarm-desc').textContent = task.desc || 'הגיע הזמן לבצע את המשימה!';
+        const media = document.getElementById('alarm-media');
+        media.innerHTML = '';
+        if (task.image) media.innerHTML += `<img src="${task.image}" alt="" class="w-full max-h-40 object-contain rounded-xl border border-slate-200 dark:border-slate-600 mb-2">`;
+        if (task.audio) media.innerHTML += `<audio controls src="${task.audio}" class="w-full h-9"></audio>`;
+        openModal('alarm-modal');
+        playAlarmSound();
+        buzz([400, 200, 400, 200, 400]);
+    }
+
+    async function handleAlarmAction(action, minutes) {
+        stopAlarmSound();
+        closeModal('alarm-modal');
+        const t = activeAlarmTask;
+        activeAlarmTask = null;
+        if (!t) { processAlarmQueue(); return; }
+
+        if (action === 'complete') {
+            await completeOccurrence(t.id, todayStr());
+        } else if (action === 'snooze') {
+            const mins = minutes || 10;
+            t.snoozeUntil = new Date(Date.now() + mins * 60000).toISOString();
+            await saveTaskToDB(t);
+            showToast(`נודניק - נזכיר לך בעוד ${mins === 60 ? 'שעה' : mins + ' דקות'}`, '💤');
             renderTasks();
         }
-        function escapeHtml(str) { return !str ? '' : str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-        function updateProgressWidget() {
-            const dailyTasks = tasks.filter(t => (t.category || 'daily') === 'daily');
-            const total = dailyTasks.length, completed = dailyTasks.filter(t => t.completed).length;
-            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-            document.getElementById('progress-bar-fill').style.width = `${percent}%`;
-            document.getElementById('progress-percent').textContent = `${percent}%`;
-            document.getElementById('progress-subtitle').textContent = `${completed} מתוך ${total} משימות יומיות הושלמו`;
-            document.getElementById('progress-title').textContent = (total > 0 && completed === total) ? 'כל הכבוד! סיימת הכל! 🚀' : (completed > 0 ? 'קצב מעולה! ממשיכים' : 'היום שלך מתחיל כאן');
-        }
-        function playCompletionBeep() {
-            initAudioContext(); if(!audioCtx) return;
-            try { const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.25); } catch (e) {}
-        }
-        function triggerConfetti() {
-            const canvas = document.getElementById('confetti-canvas'), ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            const pieces = [], colors = ['#1b4965', '#d4af37', '#b5952f', '#2c698d', '#fdf9ee'];
-            for (let i=0; i<70; i++) pieces.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height-canvas.height, color:colors[Math.floor(Math.random()*colors.length)], size:Math.random()*8+4, speed:Math.random()*4+2, angle:Math.random()*360, spin:Math.random()*8-4});
-            let frames = 0;
-            function animate() {
-                ctx.clearRect(0,0,canvas.width,canvas.height);
-                pieces.forEach(p => { p.y+=p.speed; p.angle+=p.spin; ctx.fillStyle=p.color; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.angle*Math.PI/180); ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size); ctx.restore(); });
-                if (++frames<120) requestAnimationFrame(animate); else ctx.clearRect(0,0,canvas.width,canvas.height);
-            } animate();
-        }
-        function openTaskModal() {
-            document.getElementById('task-form').reset();
-            document.getElementById('task-id').value = '';
-            document.getElementById('modal-task-heading').textContent = 'משימה חדשה';
-            resetSpeechUI(); attachedImageBase64 = null; recordedAudioBlob = null;
-            document.getElementById('image-preview-box').classList.add('hidden');
-            document.getElementById('audio-preview-box').classList.add('hidden');
-            document.getElementById('audio-preview-element').src = '';
-            
-            const defaultCat = (activeTab === 'completed' ? 'daily' : activeTab);
-            document.getElementById('task-category').value = defaultCat;
-            updateFormForCategory();
-            document.getElementById('task-modal').classList.remove('hidden');
-        }
-        function closeTaskModal() { if (isRecording) stopAudioRecording(); if (isTranscribing) stopSpeechRecognition(); document.getElementById('task-modal').classList.add('hidden'); }
-        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
-        function quickOpenPhotoModal() { openTaskModal(); setTimeout(() => document.getElementById('camera-file-input').click(), 200); }
-        function quickOpenAudioModal() { openTaskModal(); setTimeout(() => toggleAudioRecording(), 250); }
+        scheduleReminders();
+        setTimeout(processAlarmQueue, 400);
+    }
 
-        async function toggleAudioRecording() { isRecording ? stopAudioRecording() : startAudioRecording(); }
-        async function startAudioRecording() {
-            const getUserMedia = navigator.mediaDevices?.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia;
-            if (!getUserMedia || typeof MediaRecorder === 'undefined') { document.getElementById('native-audio-file-input').click(); return; }
+    /* --- צליל ורטט --- */
+    function initAudioContext() {
+        if (audioContextUnlocked) return;
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            if (!audioCtx) audioCtx = new AC();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            audioContextUnlocked = true;
+        } catch (e) {}
+    }
+    function beep(freqFrom, freqTo, dur, vol) {
+        if (!audioCtx || !settings.sound) return;
+        try {
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freqFrom, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freqTo, audioCtx.currentTime + dur * 0.5);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        } catch (e) {}
+    }
+    function playAlarmSound() {
+        initAudioContext();
+        if (!settings.sound) return;
+        const ring = () => { beep(600, 900, 0.3, 0.45); setTimeout(() => beep(600, 900, 0.3, 0.45), 220); };
+        ring();
+        stopAlarmSound();
+        alarmIntervalId = setInterval(ring, 1600);
+        setTimeout(stopAlarmSound, 60000);
+    }
+    function stopAlarmSound() { if (alarmIntervalId) { clearInterval(alarmIntervalId); alarmIntervalId = null; } }
+    function playCompletionBeep() { initAudioContext(); beep(587.33, 880, 0.25, 0.18); }
+    function buzz(pattern) { if (settings.vibrate && navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} } }
+
+    /* --- התראות מערכת + Service Worker --- */
+    async function registerServiceWorker() {
+        if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+        try {
+            swReg = await navigator.serviceWorker.register('sw.js');
+            await navigator.serviceWorker.ready;
+            navigator.serviceWorker.addEventListener('message', (e) => {
+                const d = e.data || {};
+                if (d.type === 'OPEN_TASK' && d.taskId) {
+                    const task = tasks.find(t => t.id === d.taskId);
+                    if (task && !activeAlarmTask) triggerAlarmPopup(task, Date.now());
+                }
+            });
             try {
-                const stream = navigator.mediaDevices ? await navigator.mediaDevices.getUserMedia({audio:true}) : await new Promise((res, rej) => getUserMedia.call(navigator, {audio:true}, res, rej));
-                activeAudioStream = stream; audioChunks = []; mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-                mediaRecorder.onstop = () => { recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' }); document.getElementById('audio-preview-element').src = URL.createObjectURL(recordedAudioBlob); document.getElementById('audio-preview-box').classList.remove('hidden'); if (activeAudioStream) { activeAudioStream.getTracks().forEach(t => t.stop()); activeAudioStream = null; } };
-                mediaRecorder.start(250); isRecording = true; recordSeconds = 0; document.getElementById('btn-record-audio').classList.add('pulse-recording', 'bg-rose-600', 'text-white');
-                recordTimerInterval = setInterval(() => { recordSeconds++; document.getElementById('record-status').textContent = `מקליט כעת... (${String(Math.floor(recordSeconds/60)).padStart(2,'0')}:${String(recordSeconds%60).padStart(2,'0')})`; }, 1000);
-            } catch (err) { setTimeout(() => document.getElementById('native-audio-file-input').click(), 400); }
+                if (swReg.periodicSync) {
+                    const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+                    if (status.state === 'granted') await swReg.periodicSync.register('tz-reminders', { minInterval: 15 * 60 * 1000 });
+                }
+            } catch (e) {}
+        } catch (e) { console.warn('SW registration failed', e); }
+    }
+
+    function notificationsSupported() { return 'Notification' in window; }
+
+    async function enableNotifications() {
+        if (!notificationsSupported()) { showToast('הדפדפן לא תומך בהתראות', '⚠️'); return; }
+        initAudioContext();
+        try {
+            const perm = await Notification.requestPermission();
+            if (perm === 'granted') {
+                showToast('התראות הופעלו! 🔔');
+                dismissNotifBanner(true);
+                await scheduleReminders();
+            } else if (perm === 'denied') {
+                showToast('ההתראות חסומות - יש לאשר בהגדרות הדפדפן', '🔕');
+            }
+        } catch (e) {}
+        updateNotifUI();
+    }
+
+    function dismissNotifBanner(silent) {
+        settings.bannerDismissed = true; saveSettings();
+        document.getElementById('notif-banner').classList.add('hidden');
+        if (!silent) showToast('אפשר להפעיל התראות בכל רגע מההגדרות', 'ℹ️');
+    }
+
+    function updateNotifUI() {
+        const perm = notificationsSupported() ? Notification.permission : 'unsupported';
+        const statusEl = document.getElementById('notif-status');
+        const btn = document.getElementById('notif-btn');
+        const banner = document.getElementById('notif-banner');
+        const dot = document.getElementById('settings-dot');
+        const texts = {
+            granted: 'פעיל - תקבל תזכורת גם כשהאפליקציה ברקע',
+            denied: 'חסום - יש לאשר התראות בהגדרות הדפדפן',
+            default: 'כבוי - הפעל כדי לקבל תזכורות',
+            unsupported: 'הדפדפן שלך לא תומך בהתראות'
+        };
+        if (statusEl) statusEl.textContent = texts[perm] || texts.default;
+        if (btn) {
+            // כשההתראות חסומות אין טעם בכפתור - הדפדפן לא ישאל שוב, ההסבר מופיע בטקסט
+            btn.classList.toggle('hidden', perm !== 'default');
+            btn.textContent = 'הפעל';
         }
-        function stopAudioRecording() { if (!isRecording) return; isRecording = false; clearInterval(recordTimerInterval); document.getElementById('btn-record-audio').classList.remove('pulse-recording', 'bg-rose-600', 'text-white'); document.getElementById('record-status').textContent = 'הקלטה נשמרה!'; if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); }
-        function handleNativeAudioUpload(e) { const file = e.target.files[0]; if (!file) return; recordedAudioBlob = file; document.getElementById('audio-preview-element').src = URL.createObjectURL(file); document.getElementById('audio-preview-box').classList.remove('hidden'); showToast('ההקלטה נקלטה!'); }
-        function removeAudioRecording() { recordedAudioBlob = null; document.getElementById('audio-preview-element').src = ''; document.getElementById('audio-preview-box').classList.add('hidden'); }
-        function toggleSpeechRecognition(targetId) {
-            if (isTranscribing) { stopSpeechRecognition(); return; }
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; const input = document.getElementById(targetId);
-            if (!SpeechRecognition) { showToast('הדפדפן אינו תומך בהכתבה.', '⚠️'); return; }
+        const needsAttention = perm === 'default';
+        if (banner) banner.classList.toggle('hidden', !(needsAttention && !settings.bannerDismissed));
+        if (dot) dot.classList.toggle('hidden', !needsAttention);
+    }
+
+    function showSystemNotification(task) {
+        if (!notificationsSupported() || Notification.permission !== 'granted') return;
+        const opts = {
+            body: task.desc || 'הגיע הזמן לבצע את המשימה',
+            icon: 'icon-192.png',
+            badge: 'icon-192.png',
+            tag: 'tz-now-' + task.id,
+            renotify: true,
+            requireInteraction: true,
+            vibrate: settings.vibrate ? [400, 200, 400] : undefined,
+            silent: !settings.sound,
+            data: { taskId: task.id }
+        };
+        try {
+            if (swReg) swReg.showNotification('🔔 ' + task.title, opts);
+            else new Notification('🔔 ' + task.title, opts);
+        } catch (e) {}
+    }
+
+    // מתזמן את התזכורות: גם בדפדפן וגם בשירות הרקע
+    async function scheduleReminders() {
+        const plan = upcomingReminders(14);
+        try {
+            if (swReg && swReg.active) swReg.active.postMessage({ type: 'SCHEDULE', plan: plan.slice(0, 200) });
+        } catch (e) {}
+        if (!swReg || !notificationsSupported() || Notification.permission !== 'granted') return;
+        // תזמון מראש (נתמך בחלק מהדפדפנים) - מאפשר צלצול גם כשהאפליקציה סגורה
+        const supportsTrigger = 'showTrigger' in Notification.prototype && typeof window.TimestampTrigger === 'function';
+        if (!supportsTrigger) return;
+        try {
+            const existing = await swReg.getNotifications({ includeTriggered: true });
+            existing.forEach(n => { if (n.tag && n.tag.startsWith('tz-sched-') && n.data && n.data.ts > Date.now()) n.close(); });
+        } catch (e) {}
+        for (const r of plan.slice(0, 50)) {
             try {
-                recognitionInstance = new SpeechRecognition(); recognitionInstance.lang = 'he-IL'; recognitionInstance.interimResults = true;
-                const baseText = input.value ? input.value.trim() + ' ' : ''; let finalSpoken = ''; isTranscribing = true;
-                document.getElementById('speech-icon-title').classList.add('text-rose-600', 'animate-pulse'); document.getElementById('speech-indicator-tag').classList.remove('hidden');
-                speechTimeout = setTimeout(stopSpeechRecognition, 8000);
-                recognitionInstance.onresult = (e) => { clearTimeout(speechTimeout); let interimText = ''; for (let i = e.resultIndex; i < e.results.length; ++i) { if (e.results[i].isFinal) finalSpoken += e.results[i][0].transcript; else interimText += e.results[i][0].transcript; } if ((finalSpoken || interimText).trim()) input.value = baseText + (finalSpoken || interimText).trim(); };
-                recognitionInstance.onerror = () => stopSpeechRecognition(); recognitionInstance.onend = () => stopSpeechRecognition(); recognitionInstance.start();
-            } catch (err) {}
+                await swReg.showNotification('🔔 ' + r.title, {
+                    body: r.body, icon: 'icon-192.png', badge: 'icon-192.png',
+                    tag: 'tz-sched-' + r.key, data: { taskId: r.taskId, ts: r.ts, key: r.key },
+                    requireInteraction: true,
+                    vibrate: settings.vibrate ? [400, 200, 400] : undefined,
+                    showTrigger: new TimestampTrigger(r.ts)
+                });
+            } catch (e) { break; }
         }
-        function stopSpeechRecognition() { clearTimeout(speechTimeout); isTranscribing = false; if (recognitionInstance) { try { recognitionInstance.abort(); } catch(e){} } resetSpeechUI(); }
-        function resetSpeechUI() { document.getElementById('speech-icon-title').classList.remove('text-rose-600', 'animate-pulse'); document.getElementById('speech-indicator-tag').classList.add('hidden'); }
-        function handleImageSelection(e) {
-            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = (e) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let width = img.width, height = img.height, maxDim = 800; if (width > height && width > maxDim) { height *= maxDim / width; width = maxDim; } else if (height > maxDim) { width *= maxDim / height; height = maxDim; } canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height); attachedImageBase64 = canvas.toDataURL('image/jpeg', 0.8); document.getElementById('image-preview-element').src = attachedImageBase64; document.getElementById('image-preview-box').classList.remove('hidden'); }; img.src = e.target.result; }; reader.readAsDataURL(file);
+    }
+
+    function testReminder() {
+        initAudioContext();
+        if (notificationsSupported() && Notification.permission === 'granted') {
+            showToast('התזכורת תופיע בעוד 10 שניות - אפשר לנעול את המסך', '🔔');
+            setTimeout(() => showSystemNotification({ id: 'test', title: 'בדיקת תזכורת - תזכיר לי', desc: 'ככה תיראה תזכורת אמיתית 🎉' }), 10000);
+        } else {
+            showToast('הפעל התראות כדי לבדוק', '🔕');
         }
-        function removeAttachedImage() { attachedImageBase64 = null; document.getElementById('image-preview-element').src = ''; document.getElementById('image-preview-box').classList.add('hidden'); }
-        function blobToBase64(blob) { return new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); }); }
-        function openLightbox(src) { document.getElementById('lightbox-image').src = src; document.getElementById('lightbox-modal').classList.remove('hidden'); }
-        function closeLightbox() { document.getElementById('lightbox-modal').classList.add('hidden'); }
-        
-        let toastTimeout;
-        function showToast(msg, icon = '✨') {
-            const toast = document.getElementById('toast'); document.getElementById('toast-message').textContent = msg; document.getElementById('toast-icon').textContent = icon;
-            toast.classList.remove('opacity-0', 'pointer-events-none'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none'), 3000);
+    }
+
+    /* ============================================================
+       הגדרות
+       ============================================================ */
+    function loadSettings() {
+        try { settings = { ...settings, ...JSON.parse(localStorage.getItem(LS_SETTINGS) || '{}') }; } catch (e) {}
+    }
+    function saveSettings() { try { localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); } catch (e) {} }
+    function updateSettingsFromUI() {
+        settings.sound = document.getElementById('set-sound').checked;
+        settings.vibrate = document.getElementById('set-vibrate').checked;
+        saveSettings();
+        if (settings.sound) { initAudioContext(); playCompletionBeep(); }
+        if (settings.vibrate) buzz(30);
+    }
+    function openSettings() {
+        document.getElementById('set-sound').checked = settings.sound;
+        document.getElementById('set-vibrate').checked = settings.vibrate;
+        document.getElementById('app-version').textContent = 'תזכיר לי · גרסה ' + APP_VERSION;
+        updateNotifUI();
+        openModal('settings-modal');
+    }
+    function closeSettings() { closeModal('settings-modal'); }
+
+    /* ============================================================
+       מודאלים ועזרים
+       ============================================================ */
+    function openModal(id) {
+        const el = document.getElementById(id);
+        el.classList.remove('hidden'); el.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+    function closeModal(id) {
+        const el = document.getElementById(id);
+        el.classList.add('hidden'); el.classList.remove('flex');
+        if (!document.querySelector('[role="dialog"].flex, [role="alertdialog"].flex')) document.body.classList.remove('overflow-hidden');
+    }
+
+    function openTaskModal() {
+        toggleFabMenu(false);
+        document.getElementById('task-form').reset();
+        document.getElementById('task-id').value = '';
+        document.getElementById('modal-task-heading').textContent = 'משימה חדשה';
+        resetSpeechUI();
+        attachedImageBase64 = null; recordedAudioBlob = null;
+        document.getElementById('image-preview-box').classList.add('hidden');
+        document.getElementById('audio-preview-box').classList.add('hidden');
+        document.getElementById('audio-preview-element').src = '';
+        document.getElementById('record-status').textContent = 'הקלטה חיה או ברשמקול המכשיר';
+        selectedWeekDays = [new Date().getDay()];
+        selectedMonthDays = [new Date().getDate()];
+        document.getElementById('general-date').value = todayStr();
+        const defaultCat = ['weekly', 'monthly', 'general'].includes(activeTab) ? activeTab : 'daily';
+        document.getElementById('task-category').value = defaultCat;
+        renderCategoryChips();
+        updateFormForCategory();
+        openModal('task-modal');
+        setTimeout(() => document.getElementById('task-title').focus(), 120);
+    }
+
+    function openEditTaskModal(id) {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+        toggleFabMenu(false);
+        resetSpeechUI();
+        document.getElementById('task-id').value = task.id;
+        document.getElementById('modal-task-heading').textContent = 'עריכת משימה';
+        document.getElementById('task-title').value = task.title;
+        document.getElementById('task-desc').value = task.desc || '';
+        document.getElementById('task-category').value = task.category || 'daily';
+        document.getElementById('task-priority').value = task.priority || 'medium';
+        document.getElementById('task-due-time').value = task.dueTime || '';
+        selectedWeekDays = (task.weekDays || []).slice();
+        selectedMonthDays = (task.monthDays || []).slice();
+        document.getElementById('general-date').value = task.date || todayStr();
+        renderCategoryChips();
+        updateFormForCategory();
+
+        attachedImageBase64 = task.image || null;
+        document.getElementById('image-preview-box').classList.toggle('hidden', !task.image);
+        if (task.image) document.getElementById('image-preview-element').src = task.image;
+
+        recordedAudioBlob = task.audio || null;
+        const audioBox = document.getElementById('audio-preview-box');
+        audioBox.classList.toggle('hidden', !task.audio);
+        audioBox.classList.toggle('flex', !!task.audio);
+        document.getElementById('audio-preview-element').src = task.audio || '';
+
+        openModal('task-modal');
+    }
+
+    function closeTaskModal() {
+        if (isRecording) stopAudioRecording();
+        if (isTranscribing) stopSpeechRecognition();
+        closeModal('task-modal');
+    }
+
+    function toggleFabMenu(force) {
+        const menu = document.getElementById('fab-menu');
+        const backdrop = document.getElementById('fab-backdrop');
+        const icon = document.getElementById('fab-icon');
+        const open = typeof force === 'boolean' ? force : menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', !open);
+        menu.classList.toggle('flex', open);
+        backdrop.classList.toggle('hidden', !open);
+        icon.style.transform = open ? 'rotate(45deg)' : '';
+        document.getElementById('fab-main').setAttribute('aria-expanded', String(open));
+    }
+
+    function toggleDarkMode() {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        document.getElementById('theme-icon-dark').classList.toggle('hidden', !isDark);
+        document.getElementById('theme-icon-light').classList.toggle('hidden', isDark);
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', isDark ? '#0f172a' : '#1b4965');
+    }
+    function initDarkMode() {
+        const stored = localStorage.getItem('theme');
+        if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            document.getElementById('theme-icon-dark').classList.remove('hidden');
+            document.getElementById('theme-icon-light').classList.add('hidden');
         }
-        function exportDataToFile() {
-            if (tasks.length === 0) return; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2)); const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", `TazkirLi_Backup_${getTodayDateString()}.json`); document.body.appendChild(dl); dl.click(); dl.remove();
+    }
+    function initDateHeader() {
+        document.getElementById('current-date-display').textContent =
+            new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+
+    let toastTimeout;
+    function showToast(msg, icon = '✨') {
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-message').textContent = msg;
+        document.getElementById('toast-icon').textContent = icon;
+        toast.classList.remove('opacity-0', 'pointer-events-none');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none'), 3000);
+    }
+
+    function triggerConfetti() {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const canvas = document.getElementById('confetti-canvas');
+        canvas.classList.remove('hidden');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const pieces = [], colors = ['#1b4965', '#d4af37', '#b5952f', '#2c698d', '#fdf9ee'];
+        for (let i = 0; i < 70; i++) pieces.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height, color: colors[Math.floor(Math.random() * colors.length)], size: Math.random() * 8 + 4, speed: Math.random() * 4 + 2, angle: Math.random() * 360, spin: Math.random() * 8 - 4 });
+        let frames = 0;
+        (function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pieces.forEach(p => { p.y += p.speed; p.angle += p.spin; ctx.fillStyle = p.color; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle * Math.PI / 180); ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.restore(); });
+            if (++frames < 130) requestAnimationFrame(animate);
+            else { ctx.clearRect(0, 0, canvas.width, canvas.height); canvas.classList.add('hidden'); }
+        })();
+    }
+
+    /* ============================================================
+       מדיה: הקלטה, צילום, הכתבה
+       ============================================================ */
+    function quickOpenPhotoModal() { openTaskModal(); setTimeout(() => document.getElementById('camera-file-input').click(), 250); }
+    function quickOpenAudioModal() { openTaskModal(); setTimeout(() => toggleAudioRecording(), 300); }
+
+    function toggleAudioRecording() { isRecording ? stopAudioRecording() : startAudioRecording(); }
+
+    async function startAudioRecording() {
+        const hasModern = navigator.mediaDevices && navigator.mediaDevices.getUserMedia && typeof MediaRecorder !== 'undefined';
+        if (!hasModern) { document.getElementById('native-audio-file-input').click(); return; }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            activeAudioStream = stream; audioChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                recordedAudioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                const box = document.getElementById('audio-preview-box');
+                document.getElementById('audio-preview-element').src = URL.createObjectURL(recordedAudioBlob);
+                box.classList.remove('hidden'); box.classList.add('flex');
+                if (activeAudioStream) { activeAudioStream.getTracks().forEach(t => t.stop()); activeAudioStream = null; }
+            };
+            mediaRecorder.start(250);
+            isRecording = true; recordSeconds = 0;
+            document.getElementById('btn-record-audio').classList.add('pulse-recording', 'bg-rose-600', 'text-white');
+            document.getElementById('record-status').textContent = 'מקליט כעת... (00:00)';
+            recordTimerInterval = setInterval(() => {
+                recordSeconds++;
+                document.getElementById('record-status').textContent = `מקליט כעת... (${String(Math.floor(recordSeconds / 60)).padStart(2, '0')}:${String(recordSeconds % 60).padStart(2, '0')})`;
+                if (recordSeconds >= 300) stopAudioRecording();
+            }, 1000);
+        } catch (err) {
+            showToast('אין גישה למיקרופון - נשתמש ברשמקול המכשיר', '🎙️');
+            setTimeout(() => document.getElementById('native-audio-file-input').click(), 400);
         }
-        function importDataFromFile(e) {
-            const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = async (e) => { try { const importedTasks = JSON.parse(e.target.result); if (Array.isArray(importedTasks)) { for (const task of importedTasks) if (task.id) await saveTaskToDB(task); await loadTasks(); toggleModal('backup-modal'); showToast('הנתונים שוחזרו בהצלחה!'); } } catch (err) { showToast('קובץ שגוי', '❌'); } }; reader.readAsText(file);
-        }
+    }
+
+    function stopAudioRecording() {
+        if (!isRecording) return;
+        isRecording = false;
+        clearInterval(recordTimerInterval);
+        document.getElementById('btn-record-audio').classList.remove('pulse-recording', 'bg-rose-600', 'text-white');
+        document.getElementById('record-status').textContent = 'ההקלטה נשמרה!';
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    }
+
+    function handleNativeAudioUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        recordedAudioBlob = file;
+        const box = document.getElementById('audio-preview-box');
+        document.getElementById('audio-preview-element').src = URL.createObjectURL(file);
+        box.classList.remove('hidden'); box.classList.add('flex');
+        document.getElementById('record-status').textContent = 'ההקלטה נקלטה!';
+        showToast('ההקלטה נקלטה!', '🎙️');
+    }
+
+    function removeAudioRecording() {
+        recordedAudioBlob = null;
+        document.getElementById('audio-preview-element').src = '';
+        const box = document.getElementById('audio-preview-box');
+        box.classList.add('hidden'); box.classList.remove('flex');
+        document.getElementById('record-status').textContent = 'הקלטה חיה או ברשמקול המכשיר';
+    }
+
+    function toggleSpeechRecognition(targetId) {
+        if (isTranscribing) { stopSpeechRecognition(); return; }
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const input = document.getElementById(targetId);
+        if (!SR) { showToast('הדפדפן אינו תומך בהכתבה קולית', '⚠️'); return; }
+        try {
+            recognitionInstance = new SR();
+            recognitionInstance.lang = 'he-IL';
+            recognitionInstance.interimResults = true;
+            recognitionInstance.continuous = false;
+            const baseText = input.value ? input.value.trim() + ' ' : '';
+            let finalSpoken = '';
+            isTranscribing = true;
+            document.getElementById('speech-icon-title').classList.add('text-rose-600', 'animate-pulse');
+            const tag = document.getElementById('speech-indicator-tag');
+            tag.classList.remove('hidden'); tag.classList.add('flex');
+            speechTimeout = setTimeout(stopSpeechRecognition, 10000);
+            recognitionInstance.onresult = (e) => {
+                clearTimeout(speechTimeout);
+                speechTimeout = setTimeout(stopSpeechRecognition, 4000);
+                let interim = '';
+                for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    if (e.results[i].isFinal) finalSpoken += e.results[i][0].transcript;
+                    else interim += e.results[i][0].transcript;
+                }
+                const spoken = (finalSpoken + ' ' + interim).trim();
+                if (spoken) input.value = baseText + spoken;
+            };
+            recognitionInstance.onerror = () => stopSpeechRecognition();
+            recognitionInstance.onend = () => stopSpeechRecognition();
+            recognitionInstance.start();
+        } catch (err) { stopSpeechRecognition(); }
+    }
+    function stopSpeechRecognition() {
+        clearTimeout(speechTimeout);
+        isTranscribing = false;
+        if (recognitionInstance) { try { recognitionInstance.abort(); } catch (e) {} recognitionInstance = null; }
+        resetSpeechUI();
+    }
+    function resetSpeechUI() {
+        document.getElementById('speech-icon-title').classList.remove('text-rose-600', 'animate-pulse');
+        const tag = document.getElementById('speech-indicator-tag');
+        tag.classList.add('hidden'); tag.classList.remove('flex');
+    }
+
+    function handleImageSelection(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width, height = img.height;
+                const maxDim = 900;
+                if (width > height && width > maxDim) { height *= maxDim / width; width = maxDim; }
+                else if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                attachedImageBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                document.getElementById('image-preview-element').src = attachedImageBase64;
+                document.getElementById('image-preview-box').classList.remove('hidden');
+                document.getElementById('photo-status').textContent = 'התמונה צורפה!';
+            };
+            img.onerror = () => showToast('לא הצלחנו לקרוא את התמונה', '⚠️');
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    function removeAttachedImage() {
+        attachedImageBase64 = null;
+        document.getElementById('image-preview-element').src = '';
+        document.getElementById('image-preview-box').classList.add('hidden');
+        document.getElementById('photo-status').textContent = 'צלם או העלה תמונה';
+    }
+    function blobToBase64(blob) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+        });
+    }
+    function openLightbox(src) { document.getElementById('lightbox-image').src = src; openModal('lightbox-modal'); }
+    function closeLightbox() { closeModal('lightbox-modal'); }
+
+    /* ============================================================
+       גיבוי ושחזור
+       ============================================================ */
+    function exportDataToFile() {
+        if (!tasks.length) { showToast('אין נתונים לייצוא', 'ℹ️'); return; }
+        const payload = { app: 'tazkir-li', version: APP_VERSION, exportedAt: new Date().toISOString(), tasks };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const dl = document.createElement('a');
+        dl.href = url;
+        dl.download = `TazkirLi_Backup_${todayStr()}.json`;
+        document.body.appendChild(dl); dl.click(); dl.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        showToast('קובץ הגיבוי נוצר', '💾');
+    }
+
+    function importDataFromFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                const parsed = JSON.parse(ev.target.result);
+                const incoming = Array.isArray(parsed) ? parsed : parsed.tasks;
+                if (!Array.isArray(incoming)) throw new Error('bad format');
+                const migrated = migrateTasks(incoming.filter(t => t && t.id && t.title));
+                if (!migrated.length) throw new Error('empty');
+                const byId = new Map(tasks.map(t => [t.id, t]));
+                migrated.forEach(t => byId.set(t.id, t));
+                tasks = [...byId.values()];
+                for (const t of migrated) await saveTaskToDB(t);
+                closeSettings();
+                showToast(`שוחזרו ${migrated.length} משימות`, '✅');
+                renderTasks(); scheduleReminders();
+            } catch (err) {
+                showToast('קובץ הגיבוי אינו תקין', '❌');
+            }
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    /* ============================================================
+       אתחול
+       ============================================================ */
+    function bindGlobalHandlers() {
+        // סגירת מודאל בלחיצה על הרקע
+        document.querySelectorAll('[data-dismiss]').forEach(el => {
+            el.addEventListener('click', (e) => { if (e.target === el) window[el.dataset.dismiss](); });
+        });
+        // סגירה במקש Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (!document.getElementById('task-modal').classList.contains('hidden')) closeTaskModal();
+            else if (!document.getElementById('settings-modal').classList.contains('hidden')) closeSettings();
+            else if (!document.getElementById('confirm-modal').classList.contains('hidden')) closeConfirm();
+            else if (!document.getElementById('lightbox-modal').classList.contains('hidden')) closeLightbox();
+            else toggleFabMenu(false);
+        });
+        // שחרור נגן השמע בלחיצה ראשונה
+        ['click', 'touchstart', 'keydown'].forEach(evt =>
+            document.addEventListener(evt, initAudioContext, { once: true, passive: true }));
+        // חזרה לאפליקציה - בדיקת תזכורות שהוחמצו
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') { checkAlarms(); renderTasks(); }
+        });
+        window.addEventListener('focus', checkAlarms);
+        window.addEventListener('online', scheduleReminders);
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        initDarkMode();
+        initDateHeader();
+        loadSettings();
+        loadFired();
+        bindGlobalHandlers();
+        renderCategoryChips();
+        renderWeekdayChips();
+        renderMonthdayChips();
+
+        await initDB();
+        await loadTasks();
+        await migrateAndPersist();
+
+        setActiveTab('daily');
+        updateNotifUI();
+        await registerServiceWorker();
+        await scheduleReminders();
+
+        checkAlarms();
+        setInterval(checkAlarms, 15000);
+    });
     </script>
 </body>
 </html>
