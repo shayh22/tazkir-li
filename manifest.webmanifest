@@ -1,0 +1,22 @@
+{
+  "name": "תזכיר לי - מנהל משימות",
+  "short_name": "תזכיר לי",
+  "description": "מנהל משימות ידידותי עם תזכורות, הקלטות קוליות וצילום",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#1b4965",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "משימה חדשה", "short_name": "משימה", "url": "./index.html" }
+  ]
+}
