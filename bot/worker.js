@@ -9,7 +9,8 @@
  *   users            -> ["CODE", ...]
  *   u:<CODE>         -> { chatId, tz, digest, tasks, extraDone, snooze, updatedAt }
  *   chat:<chatId>    -> CODE
- * סודות: TELEGRAM_BOT_TOKEN
+ *   config:bot_token -> טוקן הבוט (כשהוזן בדף /connect)
+ * סודות: TELEGRAM_BOT_TOKEN (אופציונלי), SETUP_KEY (מפתח חד פעמי לדף /connect)
  */
 
 const PRIORITY = { high: { icon: '🔥', label: 'דחוף', rank: 0 }, medium: { icon: '⚡', label: 'בינוני', rank: 1 }, low: { icon: '🌱', label: 'רגיל', rank: 2 } };
@@ -17,12 +18,15 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 export default {
     async fetch(req, env) {
+        env = await withToken(env);
         const url = new URL(req.url);
         if (req.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
         try {
             if (url.pathname === '/telegram' && req.method === 'POST') return await handleTelegram(req, env);
             if (url.pathname === '/sync' && req.method === 'POST') return cors(await handleSync(req, env));
             if (url.pathname === '/setup') return await handleSetup(url, env);
+            if (url.pathname === '/connect' && req.method === 'GET') return connectPage();
+            if (url.pathname === '/connect' && req.method === 'POST') return await handleConnect(req, url, env);
             if (url.pathname === '/health') return json({ ok: true, bot: !!env.TELEGRAM_BOT_TOKEN });
             return json({ ok: true, name: 'tazkir-li-bot' });
         } catch (e) {
@@ -31,11 +35,23 @@ export default {
     },
 
     async scheduled(event, env, ctx) {
+        env = await withToken(env);
         ctx.waitUntil(runMinute(event.scheduledTime, env));
     }
 };
 
 /* ---------------- עזרים ---------------- */
+async function withToken(env) {
+    if (env.TELEGRAM_BOT_TOKEN) return env;
+    const t = await env.TASKS.get('config:bot_token');
+    return t ? { ...env, TELEGRAM_BOT_TOKEN: t } : env;
+}
+function safeEqual(a, b) {
+    a = String(a || ''); b = String(b || '');
+    if (!a || a.length !== b.length) return false;
+    let r = 0; for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return r === 0;
+}
 function json(obj, status = 200) {
     return new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8' } });
 }
@@ -280,6 +296,79 @@ async function handleSync(req, env) {
     u.updatedAt = Date.now();
     await putUser(env, code, u);
     return json({ ok: true, extraDone: extra, digest: u.digest || '08:00', count: u.tasks.length });
+}
+
+/* ---------------- דף הדבקת הטוקן ---------------- */
+async function handleConnect(req, url, env) {
+    const body = await req.json().catch(() => ({}));
+    if (!env.SETUP_KEY || !safeEqual(body.key, env.SETUP_KEY)) return json({ ok: false, error: 'הקישור לא תקין או שכבר השתמשו בו. בקשו קישור חדש.' }, 403);
+    if (await env.TASKS.get('config:setup_used') === env.SETUP_KEY) return json({ ok: false, error: 'כבר השתמשו בקישור הזה. בקשו קישור חדש.' }, 403);
+    const token = String(body.token || '').trim();
+    if (!/^\d{5,15}:[A-Za-z0-9_-]{30,50}$/.test(token)) return json({ ok: false, error: 'זה לא נראה כמו טוקן של בוט. הוא בנוי כמו 123456789:ABC...' }, 400);
+    const me = await (await fetch(`https://api.telegram.org/bot${token}/getMe`)).json().catch(() => ({}));
+    if (!me.ok) return json({ ok: false, error: 'טלגרם לא מכיר את הטוקן הזה. בדקו שהעתקתם אותו במלואו מ-BotFather.' }, 400);
+    await env.TASKS.put('config:bot_token', token);
+    await env.TASKS.put('config:setup_used', env.SETUP_KEY);
+    const setup = await handleSetup(url, { ...env, TELEGRAM_BOT_TOKEN: token });
+    const s = await setup.json();
+    return json({ ok: !!s.ok, bot: me.result.username, error: s.ok ? undefined : 'הטוקן נשמר, אבל חיבור הבוט לשרת נכשל. נסו שוב בעוד דקה.' });
+}
+
+function connectPage() {
+    const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>חיבור בוט טלגרם · תזכיר לי</title>
+<style>
+:root{--bg:#f4f7f9;--card:#fff;--fg:#14232f;--mute:#5b6b78;--line:#d6dee5;--brand:#1b4965;--ok:#047857;--bad:#be123c;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1720;--card:#15212c;--fg:#e8eef3;--mute:#9aabb9;--line:#2a3b4a;--brand:#8cc4ea;--ok:#34d399;--bad:#fb7185;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+main{max-width:520px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left))}
+h1{font-size:1.5rem;margin:0 0 4px}p{margin:0}.mute{color:var(--mute);font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:20px}
+ol{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px;font-size:.95rem}
+code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:0 5px;direction:ltr;display:inline-block}
+label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px}
+input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:15px ui-monospace,monospace;direction:ltr}
+input:focus,button:focus-visible{outline:3px solid var(--brand);outline-offset:1px}
+button{margin-top:12px;width:100%;padding:13px;border:0;border-radius:12px;background:var(--brand);color:var(--card);font-weight:800;font-size:1rem;cursor:pointer}
+button[disabled]{opacity:.6;cursor:wait}
+#msg{margin-top:12px;font-weight:700;min-height:1.4em}#msg.ok{color:var(--ok)}#msg.bad{color:var(--bad)}
+.done a{color:var(--brand);font-weight:800}
+</style></head><body><main>
+<h1>📨 חיבור בוט טלגרם</h1>
+<p class="mute">הטוקן נשמר רק בשרת התזכורות שלך ב-Cloudflare. הקישור לדף הזה עובד פעם אחת בלבד.</p>
+<div class="card"><ol>
+<li>בטלגרם, פותחים את <b>@BotFather</b> ושולחים <code>/newbot</code>.</li>
+<li>בוחרים שם לבוט (למשל: תזכיר לי) ושם משתמש שמסתיים ב-<code>bot</code>.</li>
+<li>BotFather שולח טוקן שנראה כך: <code>123456789:AAH...</code>. מעתיקים אותו.</li>
+</ol></div>
+<form class="card" id="f">
+<label for="token">הטוקן של הבוט</label>
+<input id="token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="123456789:AA..." required>
+<button id="go" type="submit">שמירה וחיבור</button>
+<p id="msg" role="status"></p>
+</form>
+<div class="card done" id="done" hidden></div>
+</main><script>
+const key = new URLSearchParams(location.hash.slice(1)).get('k');
+const msg = document.getElementById('msg'), go = document.getElementById('go');
+if (!key) { msg.className = 'bad'; msg.textContent = 'חסר מפתח בקישור. פתחו את הקישור המלא שקיבלתם.'; go.disabled = true; }
+document.getElementById('f').addEventListener('submit', async e => {
+  e.preventDefault(); go.disabled = true; msg.className = ''; msg.textContent = 'בודק את הטוקן מול טלגרם...';
+  try {
+    const r = await fetch('/connect', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key, token: document.getElementById('token').value }) });
+    const d = await r.json();
+    if (!d.ok) { msg.className = 'bad'; msg.textContent = d.error || 'משהו נכשל. נסו שוב.'; go.disabled = !!(r.status === 403); return; }
+    history.replaceState(null, '', location.pathname);
+    document.getElementById('f').hidden = true;
+    const done = document.getElementById('done'); done.hidden = false;
+    done.innerHTML = '<p class="ok" style="color:var(--ok);font-weight:800">✓ הבוט מחובר</p><ol style="margin-top:10px">'
+      + '<li>פתחו את הבוט: <a href="https://t.me/' + d.bot + '" target="_blank" rel="noopener">@' + d.bot + '</a> ושלחו <code>/start</code>.</li>'
+      + '<li>הבוט ישלח קוד חיבור. מעתיקים אותו.</li>'
+      + '<li>באפליקציה תזכיר לי: ⚙️ הגדרות ← תזכורות בטלגרם ← מדביקים ולוחצים "חיבור".</li></ol>';
+  } catch (err) { msg.className = 'bad'; msg.textContent = 'אין חיבור לשרת כרגע. נסו שוב.'; go.disabled = false; }
+});
+</script></body></html>`;
+    return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-frame-options': 'DENY' } });
 }
 
 /* ---------------- הגדרת ה-webhook ---------------- */
