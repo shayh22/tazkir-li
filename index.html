@@ -524,6 +524,27 @@
                     </div>
                 </div>
 
+                <!-- טלגרם -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">📨 תזכורות בטלגרם</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-2.5">
+                        תזכורת בטלגרם בשעת כל משימה וסיכום בוקר, גם כשהאפליקציה סגורה. שלחו <b>/start</b> לבוט, והדביקו כאן את הקוד שהוא נותן.
+                        המשימות נשלחות לשרת הבוט (בלי תמונות והקלטות).
+                    </p>
+                    <div id="tg-connect" class="flex gap-2">
+                        <input id="tg-code" type="text" dir="ltr" maxlength="9" placeholder="ABCD-1234" autocomplete="off"
+                            class="flex-1 min-w-0 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-bold text-center uppercase">
+                        <button onclick="connectTelegram()" class="px-4 rounded-2xl bg-brand-600 text-white font-bold text-xs">חיבור</button>
+                    </div>
+                    <div id="tg-connected" class="hidden flex-col gap-2">
+                        <p id="tg-status" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"></p>
+                        <div class="flex gap-2">
+                            <button onclick="syncTelegram(true)" class="flex-1 py-2.5 rounded-2xl bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-200 font-semibold text-xs">סנכרון עכשיו</button>
+                            <button onclick="disconnectTelegram()" class="flex-1 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs">ניתוק</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- נתונים -->
                 <div>
                     <h4 class="text-xs font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">💾 נתונים וגיבוי</h4>
@@ -570,7 +591,7 @@
        כך משימה יומית שסומנה כבוצעה עוברת ל"הושלמו" וחוזרת מחר.
        ============================================================ */
 
-    const APP_VERSION = '2.1.0';
+    const APP_VERSION = '2.2.0';
     const DB_NAME = 'TazkirLiAppDB';
     const DB_VERSION = 3;
     const STORE_NAME = 'tasks';
@@ -676,6 +697,7 @@
 
     function saveTaskToDB(task) {
         saveFallback();
+        scheduleTelegramSync();
         return new Promise((resolve) => {
             if (!db) return resolve(false);
             try {
@@ -688,6 +710,7 @@
     }
 
     function deleteTaskFromDB(id) {
+        scheduleTelegramSync();
         return new Promise((resolve) => {
             if (!db) { saveFallback(); return resolve(false); }
             try {
@@ -1763,11 +1786,84 @@
         if (settings.sound) { initAudioContext(); playCompletionBeep(); }
         if (settings.vibrate) buzz(30);
     }
+    /* ============================================================
+       תזכורות בטלגרם (שרת הבוט: bot/worker.js)
+       ============================================================ */
+    const BOT_URL = 'https://tazkir-li-bot.shayh22.workers.dev';
+    let tgSyncTimer = null, tgSyncing = false, tgLastSync = 0;
+
+    function scheduleTelegramSync() {
+        if (!settings.tgCode) return;
+        clearTimeout(tgSyncTimer);
+        tgSyncTimer = setTimeout(() => syncTelegram(), 2500);
+    }
+
+    function updateTelegramUI() {
+        const on = !!settings.tgCode;
+        document.getElementById('tg-connect').classList.toggle('hidden', on);
+        const box = document.getElementById('tg-connected');
+        box.classList.toggle('hidden', !on); box.classList.toggle('flex', on);
+        if (on) {
+            const when = tgLastSync ? ` · סונכרן ב-${new Date(tgLastSync).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}` : '';
+            document.getElementById('tg-status').textContent = `✓ מחובר (קוד ${settings.tgCode})${when}`;
+        }
+    }
+
+    async function connectTelegram() {
+        const raw = document.getElementById('tg-code').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (raw.length !== 8) { showToast('הקוד צריך להיות 8 תווים, למשל ABCD-1234', '⚠️'); return; }
+        settings.tgCode = raw.slice(0, 4) + '-' + raw.slice(4);
+        const ok = await syncTelegram(true);
+        if (!ok) { settings.tgCode = ''; saveSettings(); updateTelegramUI(); return; }
+        saveSettings(); updateTelegramUI();
+        showToast('מחובר לטלגרם! התזכורות יגיעו לשם', '📨');
+    }
+
+    function disconnectTelegram() {
+        settings.tgCode = ''; saveSettings(); updateTelegramUI();
+        showToast('נותק. כדי למחוק גם מהבוט שלחו לו /stop', 'ℹ️');
+    }
+
+    // שולח את המשימות לבוט ומקבל משימות שסומנו "בוצע" בטלגרם
+    async function syncTelegram(loud = false) {
+        if (!settings.tgCode || tgSyncing || !navigator.onLine) return false;
+        tgSyncing = true;
+        try {
+            const payload = tasks.map(t => ({ ...t, image: null, audio: null }));
+            const res = await fetch(BOT_URL + '/sync', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json', 'x-sync-code': settings.tgCode },
+                body: JSON.stringify({ tasks: payload, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jerusalem' })
+            });
+            if (res.status === 404) { if (loud) showToast('הקוד לא נמצא. שלחו /start לבוט לקבלת קוד', '❌'); return false; }
+            if (!res.ok) throw new Error('http ' + res.status);
+            const data = await res.json();
+            let changed = 0;
+            for (const [id, dates] of Object.entries(data.extraDone || {})) {
+                const task = tasks.find(t => t.id === id);
+                if (!task) continue;
+                dates.forEach(d => {
+                    if (!(task.completions || []).some(c => c.date === d)) { task.completions = [{ date: d, at: new Date().toISOString() }, ...(task.completions || [])]; changed++; }
+                });
+                if (changed) await saveTaskToDB(task);
+            }
+            tgLastSync = Date.now();
+            if (changed) { renderTasks(); scheduleReminders(); }
+            if (loud && settings.tgCode) showToast(`סונכרנו ${data.count} משימות לטלגרם`, '📨');
+            updateTelegramUI();
+            return true;
+        } catch (e) {
+            if (loud) showToast('אין חיבור לשרת הבוט כרגע', '⚠️');
+            return false;
+        } finally { tgSyncing = false; }
+    }
+
     function openSettings() {
         document.getElementById('set-sound').checked = settings.sound;
         document.getElementById('set-vibrate').checked = settings.vibrate;
         document.getElementById('app-version').textContent = 'תזכיר לי · גרסה ' + APP_VERSION;
         updateNotifUI();
+        updateTelegramUI();
         openModal('settings-modal');
     }
     function closeSettings() { closeModal('settings-modal'); }
@@ -2144,7 +2240,7 @@
             document.addEventListener(evt, initAudioContext, { once: true, passive: true }));
         // חזרה לאפליקציה - בדיקת תזכורות שהוחמצו
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') { checkAlarms(); renderTasks(); }
+            if (document.visibilityState === 'visible') { checkAlarms(); renderTasks(); syncTelegram(); }
         });
         window.addEventListener('focus', checkAlarms);
         window.addEventListener('online', scheduleReminders);
@@ -2171,6 +2267,8 @@
 
         checkAlarms();
         setInterval(checkAlarms, 15000);
+        syncTelegram();
+        setInterval(() => syncTelegram(), 5 * 60 * 1000);
     });
     </script>
 </body>

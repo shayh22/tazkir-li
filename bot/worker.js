@@ -1,0 +1,300 @@
+/**
+ * תזכיר לי - בוט טלגרם לתזכורות
+ *
+ * - כל דקה (cron) בודק אילו משימות הגיע זמנן ושולח הודעה עם כפתורי "בוצע" ו"נודניק".
+ * - כל בוקר בשעה שנבחרה (ברירת מחדל 08:00) שולח סיכום של משימות היום לפי עדיפות.
+ * - האפליקציה מסנכרנת את המשימות לכאן עם קוד חיבור שהבוט נותן בפקודה /start.
+ *
+ * KV (TASKS):
+ *   users            -> ["CODE", ...]
+ *   u:<CODE>         -> { chatId, tz, digest, tasks, extraDone, snooze, updatedAt }
+ *   chat:<chatId>    -> CODE
+ * סודות: TELEGRAM_BOT_TOKEN
+ */
+
+const PRIORITY = { high: { icon: '🔥', label: 'דחוף', rank: 0 }, medium: { icon: '⚡', label: 'בינוני', rank: 1 }, low: { icon: '🌱', label: 'רגיל', rank: 2 } };
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+export default {
+    async fetch(req, env) {
+        const url = new URL(req.url);
+        if (req.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
+        try {
+            if (url.pathname === '/telegram' && req.method === 'POST') return await handleTelegram(req, env);
+            if (url.pathname === '/sync' && req.method === 'POST') return cors(await handleSync(req, env));
+            if (url.pathname === '/setup') return await handleSetup(url, env);
+            if (url.pathname === '/health') return json({ ok: true, bot: !!env.TELEGRAM_BOT_TOKEN });
+            return json({ ok: true, name: 'tazkir-li-bot' });
+        } catch (e) {
+            return cors(json({ ok: false, error: String(e && e.message || e) }, 500));
+        }
+    },
+
+    async scheduled(event, env, ctx) {
+        ctx.waitUntil(runMinute(event.scheduledTime, env));
+    }
+};
+
+/* ---------------- עזרים ---------------- */
+function json(obj, status = 200) {
+    return new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8' } });
+}
+function cors(res) {
+    const h = new Headers(res.headers);
+    h.set('access-control-allow-origin', '*');
+    h.set('access-control-allow-methods', 'POST, OPTIONS');
+    h.set('access-control-allow-headers', 'content-type, x-sync-code');
+    h.set('access-control-max-age', '86400');
+    return new Response(res.body, { status: res.status, headers: h });
+}
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+async function sha256hex(s) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function webhookSecret(env) { return (await sha256hex('tazkir-li|' + env.TELEGRAM_BOT_TOKEN)).slice(0, 48); }
+function newCode() {
+    const b = crypto.getRandomValues(new Uint8Array(8));
+    const s = [...b].map(x => CODE_ALPHABET[x % CODE_ALPHABET.length]).join('');
+    return s.slice(0, 4) + '-' + s.slice(4);
+}
+function normCode(c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^(.{4})(.{4})$/, '$1-$2'); }
+
+async function tg(env, method, body) {
+    const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${method}`, {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
+    });
+    return r.json().catch(() => ({ ok: false }));
+}
+
+async function getUser(env, code) { return code ? await env.TASKS.get('u:' + code, 'json') : null; }
+async function putUser(env, code, u) { await env.TASKS.put('u:' + code, JSON.stringify(u)); }
+async function getUsers(env) { return (await env.TASKS.get('users', 'json')) || []; }
+
+/* ---------------- זמן מקומי ---------------- */
+function localParts(ms, tz) {
+    const f = new Intl.DateTimeFormat('en-CA', { timeZone: tz || 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+    const p = Object.fromEntries(f.formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+    const hour = p.hour === '24' ? '00' : p.hour;
+    return { date: `${p.year}-${p.month}-${p.day}`, time: `${hour}:${p.minute}` };
+}
+function dowOf(ds) { const [y, m, d] = ds.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
+function dimOf(ds) { const [y, m] = ds.split('-').map(Number); return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+function fmtDate(ds) { const [y, m, d] = ds.split('-'); return `${Number(d)}.${Number(m)}`; }
+
+/* ---------------- לוגיקת משימות (זהה לאפליקציה) ---------------- */
+function isDueOn(t, ds) {
+    switch (t.category) {
+        case 'daily': return !t.startDate || ds >= t.startDate;
+        case 'weekly': return (t.weekDays || []).includes(dowOf(ds));
+        case 'monthly': {
+            const days = t.monthDays || []; if (!days.length) return false;
+            const dim = dimOf(ds), dom = Number(ds.slice(8, 10));
+            return days.some(n => n === dom || (n > dim && dom === dim));
+        }
+        case 'general': return t.date === ds;
+    }
+    return false;
+}
+function occKey(t, ds) { return t.category === 'general' ? (t.date || ds) : ds; }
+function isDone(u, t, ds) {
+    const k = occKey(t, ds);
+    return (t.completions || []).some(c => c.date === k) || ((u.extraDone || {})[t.id] || []).includes(k);
+}
+function isOverdue(u, t, today) { return t.category === 'general' && t.date && t.date < today && !isDone(u, t, t.date); }
+function sortTasks(a, b) {
+    const pa = (PRIORITY[a.priority] || PRIORITY.medium).rank, pb = (PRIORITY[b.priority] || PRIORITY.medium).rank;
+    if (pa !== pb) return pa - pb;
+    return (a.dueTime || '99:99') < (b.dueTime || '99:99') ? -1 : 1;
+}
+
+function todayList(u, nowMs) {
+    const { date } = localParts(nowMs, u.tz);
+    const tasks = u.tasks || [];
+    const overdue = tasks.filter(t => isOverdue(u, t, date)).sort(sortTasks);
+    const today = tasks.filter(t => isDueOn(t, date) && !isDone(u, t, date)).sort(sortTasks);
+    const done = tasks.filter(t => isDueOn(t, date) && isDone(u, t, date)).length;
+    return { date, overdue, today, done };
+}
+
+function taskLine(t, extra = '') {
+    const p = PRIORITY[t.priority] || PRIORITY.medium;
+    return `${p.icon} ${t.dueTime ? `<b>${t.dueTime}</b> · ` : ''}${esc(t.title)}${t.project ? ` <i>(${esc(t.project)})</i>` : ''}${extra}`;
+}
+
+function digestText(u, nowMs, heading) {
+    const { date, overdue, today, done } = todayList(u, nowMs);
+    let s = `${heading}\n<b>${fmtDate(date)}</b> · ${today.length + overdue.length} פתוחות${done ? ` · ${done} הושלמו` : ''}\n`;
+    if (overdue.length) s += `\n⚠️ <b>באיחור</b>\n` + overdue.map(t => taskLine(t, ` · מ-${fmtDate(t.date)}`)).join('\n') + '\n';
+    if (today.length) s += `\n🎯 <b>להיום, לפי עדיפות</b>\n` + today.map(t => taskLine(t)).join('\n');
+    if (!overdue.length && !today.length) s += '\nאין משימות פתוחות להיום 🎉';
+    return s;
+}
+
+function reminderKeyboard(t, ds) {
+    return { inline_keyboard: [[
+        { text: '✅ בוצע', callback_data: `d|${t.id}|${ds}`.slice(0, 64) },
+        { text: '⏰ 10 דק׳', callback_data: `s|${t.id}|10`.slice(0, 64) },
+        { text: '⏰ שעה', callback_data: `s|${t.id}|60`.slice(0, 64) }
+    ]] };
+}
+
+/* ---------------- כל דקה ---------------- */
+async function runMinute(scheduledMs, env) {
+    if (!env.TELEGRAM_BOT_TOKEN) return;
+    const T = Math.floor(scheduledMs / 60000) * 60000;
+    const codes = await getUsers(env);
+    for (const code of codes) {
+        const u = await getUser(env, code);
+        if (!u || !u.chatId) continue;
+        const { date, time } = localParts(T, u.tz);
+        const sends = [];
+
+        if ((u.digest || '08:00') === time) {
+            sends.push(tg(env, 'sendMessage', { chat_id: u.chatId, parse_mode: 'HTML', text: digestText(u, T, '☀️ <b>בוקר טוב! זה היום שלך</b>') }));
+        }
+        for (const t of (u.tasks || [])) {
+            if (t.dueTime === time && isDueOn(t, date) && !isDone(u, t, date)) {
+                sends.push(tg(env, 'sendMessage', {
+                    chat_id: u.chatId, parse_mode: 'HTML', reply_markup: reminderKeyboard(t, date),
+                    text: `🔔 <b>תזכורת</b>\n${taskLine(t)}${t.desc ? `\n\n${esc(t.desc)}` : ''}`
+                }));
+            }
+            const snoozes = [(u.snooze || {})[t.id], t.snoozeUntil ? Date.parse(t.snoozeUntil) : null];
+            if (snoozes.some(s => s && s > T - 60000 && s <= T) && !isDone(u, t, occKey(t, date))) {
+                sends.push(tg(env, 'sendMessage', {
+                    chat_id: u.chatId, parse_mode: 'HTML', reply_markup: reminderKeyboard(t, occKey(t, date)),
+                    text: `⏰ <b>תזכורת נודניק</b>\n${taskLine(t)}`
+                }));
+            }
+        }
+        await Promise.all(sends);
+    }
+}
+
+/* ---------------- טלגרם (webhook) ---------------- */
+async function handleTelegram(req, env) {
+    if (req.headers.get('x-telegram-bot-api-secret-token') !== await webhookSecret(env)) return new Response('forbidden', { status: 403 });
+    const upd = await req.json();
+
+    if (upd.callback_query) {
+        const q = upd.callback_query, chatId = q.message && q.message.chat.id;
+        const code = await env.TASKS.get('chat:' + chatId);
+        const u = await getUser(env, code);
+        const [kind, taskId, arg] = String(q.data || '').split('|');
+        const t = u && (u.tasks || []).find(x => x.id === taskId);
+        if (!t) { await tg(env, 'answerCallbackQuery', { callback_query_id: q.id, text: 'המשימה לא נמצאה' }); return json({ ok: true }); }
+        let note = '';
+        if (kind === 'd') {
+            u.extraDone = u.extraDone || {};
+            const list = u.extraDone[taskId] || [];
+            if (!list.includes(arg)) list.push(arg);
+            u.extraDone[taskId] = list;
+            if (u.snooze) delete u.snooze[taskId];
+            note = '✅ בוצע';
+        } else if (kind === 's') {
+            u.snooze = u.snooze || {};
+            u.snooze[taskId] = Date.now() + Number(arg || 10) * 60000;
+            note = Number(arg) >= 60 ? '⏰ אזכיר בעוד שעה' : `⏰ אזכיר בעוד ${arg} דקות`;
+        }
+        await putUser(env, code, u);
+        await tg(env, 'answerCallbackQuery', { callback_query_id: q.id, text: note });
+        await tg(env, 'editMessageText', { chat_id: chatId, message_id: q.message.message_id, parse_mode: 'HTML', text: `${taskLine(t)}\n\n${note}` });
+        return json({ ok: true });
+    }
+
+    const msg = upd.message;
+    if (!msg || !msg.text) return json({ ok: true });
+    const chatId = msg.chat.id;
+    const text = msg.text.trim();
+    const cmd = text.split(/\s+/)[0].split('@')[0];
+    const send = (t, extra = {}) => tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text: t, ...extra });
+
+    let code = await env.TASKS.get('chat:' + chatId);
+    if (cmd === '/start') {
+        if (!code) {
+            code = newCode();
+            await putUser(env, code, { chatId, tz: 'Asia/Jerusalem', digest: '08:00', tasks: [], extraDone: {}, snooze: {}, createdAt: Date.now() });
+            await env.TASKS.put('chat:' + chatId, code);
+            const users = await getUsers(env);
+            if (!users.includes(code)) { users.push(code); await env.TASKS.put('users', JSON.stringify(users)); }
+        }
+        await send(`👋 <b>ברוכים הבאים לתזכיר לי</b>\n\nקוד החיבור שלך:\n<code>${code}</code>\n\nבאפליקציה: ⚙️ הגדרות ← תזכורות בטלגרם ← מדביקים את הקוד ולוחצים "חיבור".\n\nפקודות: /today משימות להיום · /digest שעת סיכום הבוקר · /stop ניתוק`);
+        return json({ ok: true });
+    }
+    const u = await getUser(env, code);
+    if (!u) { await send('עוד לא התחברת. שלחו /start כדי לקבל קוד חיבור.'); return json({ ok: true }); }
+
+    if (cmd === '/today' || text === 'היום') {
+        await send(digestText(u, Date.now(), '📋 <b>המשימות שלך</b>'));
+    } else if (cmd === '/digest') {
+        const m = text.match(/(\d{1,2}):(\d{2})/);
+        if (m && Number(m[1]) < 24 && Number(m[2]) < 60) {
+            u.digest = `${m[1].padStart(2, '0')}:${m[2]}`;
+            await putUser(env, code, u);
+            await send(`☀️ סיכום הבוקר יישלח כל יום ב-<b>${u.digest}</b>.`);
+        } else {
+            await send(`סיכום הבוקר נשלח כל יום ב-<b>${u.digest || '08:00'}</b>.\nלשינוי: <code>/digest 07:30</code>`);
+        }
+    } else if (cmd === '/stop') {
+        await env.TASKS.delete('u:' + code);
+        await env.TASKS.delete('chat:' + chatId);
+        const users = (await getUsers(env)).filter(c => c !== code);
+        await env.TASKS.put('users', JSON.stringify(users));
+        await send('נותקת. המשימות נמחקו מהבוט. לחיבור מחדש: /start');
+    } else {
+        await send('פקודות: /today משימות להיום · /digest שעת סיכום הבוקר · /stop ניתוק');
+    }
+    return json({ ok: true });
+}
+
+/* ---------------- סנכרון מהאפליקציה ---------------- */
+const KEEP = ['id', 'title', 'desc', 'project', 'priority', 'category', 'date', 'dueTime', 'weekDays', 'monthDays', 'startDate', 'snoozeUntil'];
+async function handleSync(req, env) {
+    const code = normCode(req.headers.get('x-sync-code'));
+    const u = await getUser(env, code);
+    if (!u) return json({ ok: false, error: 'unknown_code' }, 404);
+    const body = await req.json();
+    if (!Array.isArray(body.tasks) || body.tasks.length > 2000) return json({ ok: false, error: 'bad_tasks' }, 400);
+
+    u.tasks = body.tasks.filter(t => t && t.id && t.title).map(t => {
+        const o = {};
+        KEEP.forEach(k => { if (t[k] !== undefined && t[k] !== null) o[k] = t[k]; });
+        o.title = String(o.title).slice(0, 300);
+        if (o.desc) o.desc = String(o.desc).slice(0, 1000);
+        o.completions = (t.completions || []).slice(0, 60).map(c => ({ date: c.date }));
+        return o;
+    });
+    if (body.tz && typeof body.tz === 'string' && body.tz.length < 64) u.tz = body.tz;
+
+    // השלמות מטלגרם שהאפליקציה כבר קיבלה - אפשר לשכוח
+    const extra = {};
+    const ids = new Set(u.tasks.map(t => t.id));
+    Object.entries(u.extraDone || {}).forEach(([id, dates]) => {
+        if (!ids.has(id)) return;
+        const t = u.tasks.find(x => x.id === id);
+        const left = dates.filter(d => !(t.completions || []).some(c => c.date === d));
+        if (left.length) extra[id] = left;
+    });
+    u.extraDone = extra;
+    u.updatedAt = Date.now();
+    await putUser(env, code, u);
+    return json({ ok: true, extraDone: extra, digest: u.digest || '08:00', count: u.tasks.length });
+}
+
+/* ---------------- הגדרת ה-webhook ---------------- */
+async function handleSetup(url, env) {
+    if (!env.TELEGRAM_BOT_TOKEN) return json({ ok: false, error: 'missing TELEGRAM_BOT_TOKEN secret' }, 400);
+    const hook = await tg(env, 'setWebhook', {
+        url: `${url.origin}/telegram`, secret_token: await webhookSecret(env),
+        allowed_updates: ['message', 'callback_query'], drop_pending_updates: true
+    });
+    await tg(env, 'setMyCommands', { commands: [
+        { command: 'today', description: 'המשימות שלי להיום' },
+        { command: 'digest', description: 'שעת סיכום הבוקר' },
+        { command: 'start', description: 'קוד חיבור לאפליקציה' },
+        { command: 'stop', description: 'ניתוק' }
+    ] });
+    const me = await tg(env, 'getMe', {});
+    return json({ ok: !!hook.ok, webhook: hook.description || hook, bot: me.result && me.result.username });
+}
