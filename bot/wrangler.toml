@@ -1,0 +1,13 @@
+name = "tazkir-li-bot"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# כל דקה: תזכורות בשעתן + סיכום בוקר
+[triggers]
+crons = ["* * * * *"]
+
+[[kv_namespaces]]
+binding = "TASKS"
+id = "afeef434f6a6404e97ba9bc029e56508"
+
+# סוד (לא בקוד): wrangler secret put TELEGRAM_BOT_TOKEN

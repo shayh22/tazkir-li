@@ -73,6 +73,51 @@
         .task-card { transition: opacity .2s ease, transform .2s ease; }
         .task-card.leaving { opacity: 0; transform: scale(.97); }
         input[type="time"], input[type="date"] { min-height: 2.75rem; }
+
+        /* ===== לוח בקרה (דשבורד) ===== */
+        :root { --db-card: #ffffff; --db-line: #e2e8f0; --db-soft: #f1f5f9; --db-ink: #1e293b; --db-mute: #64748b; --db-brand: #1b4965; --db-gold: #d4af37; --db-rose: #e11d48; --db-amber: #d97706; --db-green: #059669; }
+        .dark { --db-card: #1e293b; --db-line: #334155; --db-soft: #0f172a; --db-ink: #f1f5f9; --db-mute: #94a3b8; --db-brand: #93c5fd; --db-gold: #e5c237; --db-rose: #fb7185; --db-amber: #fbbf24; --db-green: #34d399; }
+        .db-grid { display: grid; gap: .75rem; }
+        .db-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; }
+        @media (min-width: 640px) { .db-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } .db-two { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        .db-card { background: var(--db-card); border: 1px solid var(--db-line); border-radius: 1.25rem; padding: 1rem; min-width: 0; }
+        .db-kpi { display: flex; flex-direction: column; gap: .15rem; text-align: right; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+        .db-kpi:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(15, 23, 42, .06); }
+        .db-kpi-num { font-size: 1.75rem; font-weight: 900; line-height: 1.1; color: var(--db-ink); font-variant-numeric: tabular-nums; }
+        .db-kpi-lbl { font-size: .72rem; font-weight: 700; color: var(--db-mute); }
+        .db-kpi.is-alert .db-kpi-num { color: var(--db-rose); }
+        .db-kpi.is-good .db-kpi-num { color: var(--db-green); }
+        .db-h { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .625rem; }
+        .db-h h3 { font-size: .85rem; font-weight: 900; color: var(--db-ink); }
+        .db-h a, .db-h button { font-size: .7rem; font-weight: 700; color: var(--db-brand); background: none; border: 0; cursor: pointer; }
+        .db-row { display: flex; align-items: center; gap: .625rem; padding: .55rem 0; border-top: 1px solid var(--db-line); min-width: 0; }
+        .db-row:first-of-type { border-top: 0; }
+        .db-row-main { flex: 1; min-width: 0; }
+        .db-row-title { font-size: .8rem; font-weight: 700; color: var(--db-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .db-row-sub { font-size: .68rem; color: var(--db-mute); margin-top: .1rem; }
+        .db-time { font-size: .72rem; font-weight: 800; color: var(--db-brand); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .db-dot { width: .55rem; height: .55rem; border-radius: 9999px; flex-shrink: 0; }
+        .db-p-high { background: var(--db-rose); } .db-p-medium { background: var(--db-amber); } .db-p-low { background: var(--db-green); }
+        .db-meter { height: .375rem; border-radius: 9999px; background: var(--db-soft); overflow: hidden; margin-top: .4rem; }
+        .db-meter > span { display: block; height: 100%; border-radius: 9999px; background: var(--db-brand); }
+        .db-proj { cursor: pointer; }
+        .db-proj:hover .db-row-title { color: var(--db-brand); }
+        .db-badge { font-size: .62rem; font-weight: 800; padding: .1rem .45rem; border-radius: 9999px; white-space: nowrap; }
+        .db-badge-high { background: rgba(225, 29, 72, .1); color: var(--db-rose); }
+        .db-badge-mute { background: var(--db-soft); color: var(--db-mute); }
+        .db-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5rem; align-items: end; height: 6.5rem; }
+        .db-bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: .25rem; height: 100%; }
+        .db-bar-fill { width: 100%; max-width: 1.75rem; border-radius: .4rem .4rem .15rem .15rem; background: var(--db-brand); min-height: 2px; }
+        .db-bar.is-today .db-bar-fill { background: var(--db-gold); }
+        .db-bar-val { font-size: .62rem; font-weight: 800; color: var(--db-mute); font-variant-numeric: tabular-nums; }
+        .db-bar-lbl { font-size: .62rem; font-weight: 700; color: var(--db-mute); }
+        .db-empty { font-size: .75rem; color: var(--db-mute); padding: .5rem 0; }
+        .db-cta { display: flex; align-items: center; gap: .75rem; }
+        .db-btn { padding: .55rem .9rem; border-radius: .9rem; font-size: .75rem; font-weight: 800; background: var(--db-brand); color: #fff; border: 0; cursor: pointer; white-space: nowrap; }
+        .dark .db-btn { color: #0f172a; }
+        .db-focus-list { display: flex; flex-direction: column; gap: .625rem; }
+        .proj-chip { font-size: 10px; font-weight: 700; padding: .125rem .5rem; border-radius: .375rem; background: rgba(212, 175, 55, .15); color: #8a6d12; }
+        .dark .proj-chip { color: #e5c237; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200 pad-nav">
@@ -144,7 +189,7 @@
         </section>
 
         <!-- סרגל חיפוש וסינון -->
-        <section class="flex gap-2">
+        <section id="filter-bar" class="flex gap-2">
             <div class="relative flex-1">
                 <svg class="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -252,6 +297,13 @@
                 <div>
                     <label for="task-desc" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">הערות ופרטים נוספים</label>
                     <textarea id="task-desc" rows="2" placeholder="הוסף פרטים..." class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label for="task-project" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">פרויקט / תחום (לא חובה)</label>
+                    <input type="text" id="task-project" list="project-options" placeholder="למשל: עבודה, בית, לימודים..." autocomplete="off"
+                        class="w-full p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                    <datalist id="project-options"></datalist>
                 </div>
 
                 <!-- סוג המשימה -->
@@ -472,6 +524,27 @@
                     </div>
                 </div>
 
+                <!-- טלגרם -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">📨 תזכורות בטלגרם</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-2.5">
+                        תזכורת בטלגרם בשעת כל משימה וסיכום בוקר, גם כשהאפליקציה סגורה. שלחו <b>/start</b> לבוט, והדביקו כאן את הקוד שהוא נותן.
+                        המשימות נשלחות לשרת הבוט (בלי תמונות והקלטות).
+                    </p>
+                    <div id="tg-connect" class="flex gap-2">
+                        <input id="tg-code" type="text" dir="ltr" maxlength="9" placeholder="ABCD-1234" autocomplete="off"
+                            class="flex-1 min-w-0 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-bold text-center uppercase">
+                        <button onclick="connectTelegram()" class="px-4 rounded-2xl bg-brand-600 text-white font-bold text-xs">חיבור</button>
+                    </div>
+                    <div id="tg-connected" class="hidden flex-col gap-2">
+                        <p id="tg-status" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"></p>
+                        <div class="flex gap-2">
+                            <button onclick="syncTelegram(true)" class="flex-1 py-2.5 rounded-2xl bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-200 font-semibold text-xs">סנכרון עכשיו</button>
+                            <button onclick="disconnectTelegram()" class="flex-1 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs">ניתוק</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- נתונים -->
                 <div>
                     <h4 class="text-xs font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">💾 נתונים וגיבוי</h4>
@@ -481,9 +554,16 @@
                     <div class="flex flex-col gap-2.5">
                         <button onclick="exportDataToFile()" class="w-full py-3 px-4 rounded-2xl bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-200 font-semibold text-xs hover:bg-brand-100 transition">ייצוא קובץ גיבוי מלא (JSON)</button>
                         <label class="w-full py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
-                            שחזור נתונים מקובץ גיבוי
+                            שחזור / ייבוא משימות מקובץ
                             <input type="file" accept=".json,application/json" class="hidden" onchange="importDataFromFile(event)">
                         </label>
+                        <details class="rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs">
+                            <summary class="py-3 px-4 font-semibold cursor-pointer text-center">ייבוא משימות מטקסט מועתק (JSON)</summary>
+                            <div class="px-3 pb-3 flex flex-col gap-2">
+                                <textarea id="import-text" rows="4" dir="ltr" placeholder='{"tasks":[...]}' class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-[11px] font-mono"></textarea>
+                                <button onclick="importFromPastedText()" class="w-full py-2.5 rounded-xl bg-brand-600 text-white font-bold text-xs">ייבוא</button>
+                            </div>
+                        </details>
                         <button onclick="confirmClearAll()" class="w-full py-3 px-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 font-semibold text-xs hover:bg-rose-100 transition">מחיקת כל הנתונים</button>
                     </div>
                 </div>
@@ -511,7 +591,7 @@
        כך משימה יומית שסומנה כבוצעה עוברת ל"הושלמו" וחוזרת מחר.
        ============================================================ */
 
-    const APP_VERSION = '2.0.0';
+    const APP_VERSION = '2.2.0';
     const DB_NAME = 'TazkirLiAppDB';
     const DB_VERSION = 3;
     const STORE_NAME = 'tasks';
@@ -522,18 +602,19 @@
     const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
     const DAY_SHORT = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
     const CATEGORIES = {
+        dashboard:{ label: 'לוח',  icon: '📊', title: 'לוח הבקרה שלך', sub: 'מה דחוף עכשיו, מה מתקרב ואיך מתקדמים - במבט אחד' },
         daily:   { label: 'היום',  icon: '☀️', title: 'היום',           sub: 'כל מה שמתוזמן להיום - יומי, שבועי, חודשי וחד פעמי' },
         weekly:  { label: 'שבועי', icon: '📅', title: 'משימות שבועיות', sub: 'חוזרות בימים קבועים בשבוע' },
         monthly: { label: 'חודשי', icon: '🗓️', title: 'משימות חודשיות', sub: 'חוזרות בתאריכים קבועים בחודש' },
         general: { label: 'כללי',  icon: '💡', title: 'משימות כלליות',  sub: 'משימות חד פעמיות עם תאריך יעד' },
         completed:{label: 'הושלמו',icon: '✅', title: 'משימות שהושלמו', sub: 'היסטוריית הביצוע שלך' }
     };
-    const TABS = ['daily', 'weekly', 'monthly', 'general', 'completed'];
+    const TABS = ['dashboard', 'daily', 'weekly', 'monthly', 'general', 'completed'];
 
     /* --- מצב גלובלי --- */
     let db = null;
     let tasks = [];
-    let activeTab = 'daily';
+    let activeTab = 'dashboard';
     let settings = { sound: true, vibrate: true, bannerDismissed: false };
     let firedAlarms = {};
     let swReg = null;
@@ -616,6 +697,7 @@
 
     function saveTaskToDB(task) {
         saveFallback();
+        scheduleTelegramSync();
         return new Promise((resolve) => {
             if (!db) return resolve(false);
             try {
@@ -628,6 +710,7 @@
     }
 
     function deleteTaskFromDB(id) {
+        scheduleTelegramSync();
         return new Promise((resolve) => {
             if (!db) { saveFallback(); return resolve(false); }
             try {
@@ -649,6 +732,7 @@
             task.priority = ['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium';
             task.title = task.title || 'משימה';
             task.dueTime = task.dueTime || '';
+            task.project = typeof task.project === 'string' ? task.project.trim() : '';
 
             if (!Array.isArray(task.weekDays)) {
                 task.weekDays = task.category === 'weekly' && task.recurringValue !== undefined && task.recurringValue !== ''
@@ -793,6 +877,7 @@
 
     function navIcon(tab) {
         const paths = {
+            dashboard: 'M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zm10-4a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z',
             daily: 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z',
             weekly: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
             monthly: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
@@ -805,6 +890,7 @@
     function tabCounts() {
         const t = todayStr();
         return {
+            dashboard: focusTasks().filter(x => x.priority === 'high' || isOverdue(x)).length,
             daily: tasksForToday().filter(x => !isDoneOn(x, t)).length,
             weekly: tasks.filter(x => x.category === 'weekly').length,
             monthly: tasks.filter(x => x.category === 'monthly').length,
@@ -842,6 +928,7 @@
         activeTab = tab;
         doneSectionOpen = false;
         document.getElementById('daily-progress-widget').classList.toggle('hidden', tab !== 'daily');
+        document.getElementById('filter-bar').classList.toggle('hidden', tab === 'dashboard');
         const c = CATEGORIES[tab];
         document.getElementById('view-title').textContent = c.title;
         document.getElementById('view-subtitle').textContent = c.sub;
@@ -852,7 +939,7 @@
     function matchesFilters(task) {
         const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
         const priorityFilter = document.getElementById('filter-priority').value;
-        if (searchVal && !((task.title || '').toLowerCase().includes(searchVal) || (task.desc || '').toLowerCase().includes(searchVal))) return false;
+        if (searchVal && !((task.title || '').toLowerCase().includes(searchVal) || (task.desc || '').toLowerCase().includes(searchVal) || (task.project || '').toLowerCase().includes(searchVal))) return false;
         if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
         return true;
     }
@@ -873,6 +960,7 @@
         const t = todayStr();
 
         if (activeTab === 'completed') { container.innerHTML = renderCompletedList(); return; }
+        if (activeTab === 'dashboard') { container.innerHTML = renderDashboard(); return; }
 
         if (activeTab === 'daily') {
             const all = tasksForToday().filter(matchesFilters);
@@ -946,7 +1034,7 @@
         const time = task.dueTime ? `🔔 ${task.dueTime}` : '';
 
         let whenChip = '';
-        if (activeTab === 'daily') {
+        if (activeTab === 'daily' || activeTab === 'dashboard') {
             if (overdue) whenChip = `<span class="text-rose-600 dark:text-rose-400 font-bold">⚠️ באיחור מ-${formatDate(task.date)}</span>`;
             else if (task.dueTime) whenChip = `<span class="text-brand-600 dark:text-brand-300 font-bold">${time}</span>`;
             else whenChip = `<span class="text-slate-400">ללא שעה</span>`;
@@ -975,6 +1063,7 @@
                         <div class="flex items-center gap-1.5 flex-wrap mb-1.5 text-[11px]">
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${pm.cls}">${pm.label}</span>
                             ${recrText}
+                            ${task.project ? `<span class="proj-chip">📁 ${escapeHtml(task.project)}</span>` : ''}
                             ${whenChip}
                         </div>
                         <h3 class="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 ${done ? 'task-completed' : ''} break-words">${escapeHtml(task.title)}</h3>
@@ -1029,6 +1118,165 @@
             </div>`;
         });
         if (filtered.length > limited.length) html += `<p class="text-center text-[11px] text-slate-400 py-2">מוצגות 300 ההשלמות האחרונות</p>`;
+        return html;
+    }
+
+    /* ============================================================
+       לוח בקרה - עדיפויות, תזכורות קרובות, פרויקטים והתקדמות
+       ============================================================ */
+    function minutesOf(hhmm) { const [h, m] = String(hhmm).split(':').map(Number); return h * 60 + m; }
+    function daysBetween(a, b) { return Math.round((parseYmd(b) - parseYmd(a)) / 86400000); }
+
+    // ציון עדיפות: באיחור > דחוף > שעה קרובה. ככל שהציון גבוה - המשימה ראשונה בתור
+    function priorityScore(task) {
+        const t = todayStr();
+        let s = { high: 300, medium: 200, low: 100 }[task.priority] || 200;
+        if (isOverdue(task)) s += 400 + Math.min(100, daysBetween(task.date, t) * 10);
+        if (task.dueTime) {
+            const n = new Date(), diff = minutesOf(task.dueTime) - (n.getHours() * 60 + n.getMinutes());
+            if (diff < 0) s += 80;                 // השעה כבר עברה - לא לשכוח
+            else s += Math.max(0, 60 - diff / 6);  // ככל שקרוב יותר - גבוה יותר
+        }
+        return s;
+    }
+
+    function focusTasks() {
+        const t = todayStr();
+        return tasksForToday().filter(x => !isDoneOn(x, t)).sort((a, b) => priorityScore(b) - priorityScore(a));
+    }
+
+    function completionsOnDay(ds) {
+        return tasks.reduce((n, x) => n + (x.completions || []).filter(c => ((c.at || '').slice(0, 10) || c.date) === ds).length, 0);
+    }
+
+    function projectStats() {
+        const t = todayStr(), map = new Map();
+        tasks.forEach(task => {
+            const name = task.project || 'ללא פרויקט';
+            if (!map.has(name)) map.set(name, { name, open: 0, high: 0, done: 0, overdue: 0, next: null });
+            const p = map.get(name);
+            const doneOnce = task.category === 'general' ? (task.completions || []).length > 0 : false;
+            if (task.category === 'general') { if (doneOnce) p.done++; else p.open++; }
+            else { p.open++; if (isDoneOn(task, t)) p.done++; }
+            if (!doneOnce && task.priority === 'high') p.high++;
+            if (isOverdue(task)) p.overdue++;
+            const nx = doneOnce ? null : nextOccurrence(task);
+            if (nx && (!p.next || nx < p.next)) p.next = nx;
+        });
+        return [...map.values()].sort((a, b) => (b.overdue - a.overdue) || (b.high - a.high) || (b.open - a.open));
+    }
+
+    function refreshProjectOptions() {
+        const names = [...new Set(tasks.map(t => t.project).filter(Boolean))].sort();
+        document.getElementById('project-options').innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+    }
+
+    function openProject(name) {
+        setActiveTab('general');
+        document.getElementById('search-input').value = name === 'ללא פרויקט' ? '' : name;
+        renderTasks();
+    }
+
+    function greeting() {
+        const h = new Date().getHours();
+        return h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב';
+    }
+
+    function renderDashboard() {
+        const t = todayStr();
+        const today = tasksForToday();
+        const focus = focusTasks();
+        const doneToday = today.filter(x => isDoneOn(x, t)).length;
+        const overdue = tasks.filter(isOverdue).length;
+        const urgent = focus.filter(x => x.priority === 'high').length;
+        let week = 0; for (let i = 0; i < 7; i++) week += completionsOnDay(ymd(addDays(new Date(), -i)));
+        const pct = today.length ? Math.round(doneToday / today.length * 100) : 0;
+
+        if (!tasks.length) {
+            return emptyState('📊', 'הלוח שלך ממתין למשימות', 'הוסף משימה עם הכפתור למטה, או ייבא חבילת משימות מוכנה בהגדרות ← נתונים וגיבוי.');
+        }
+
+        // מצב היום
+        const headline = !today.length ? 'אין משימות מתוזמנות להיום'
+            : !focus.length ? 'סיימת את כל המשימות להיום! 🎉'
+            : overdue ? `יש ${overdue} משימות באיחור - מתחילים מהן`
+            : urgent ? `${urgent} משימות דחופות מחכות לך היום`
+            : `נשארו ${focus.length} משימות להיום`;
+        let html = `<section class="bg-gradient-to-br from-brand-700 via-brand-600 to-gold-500 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden anim-in">
+            <p class="text-xs font-medium text-gold-50">${greeting()} 👋</p>
+            <h2 class="text-xl font-bold text-white mt-0.5">${headline}</h2>
+            <div class="flex items-center gap-3 mt-3">
+                <div class="flex-1 bg-white/20 h-3 rounded-full overflow-hidden p-0.5"><div class="bg-gold-300 h-full rounded-full transition-all duration-500" style="width:${pct}%"></div></div>
+                <span class="font-extrabold text-lg text-gold-200">${pct}%</span>
+            </div>
+            <p class="text-xs text-brand-100 mt-1">${doneToday} מתוך ${today.length} משימות של היום הושלמו</p>
+        </section>`;
+
+        // מדדים
+        const kpi = (num, lbl, cls, tab) => `<button class="db-card db-kpi ${cls}" onclick="setActiveTab('${tab}')"><span class="db-kpi-num">${num}</span><span class="db-kpi-lbl">${lbl}</span></button>`;
+        html += `<section class="db-kpis">
+            ${kpi(focus.length, 'פתוחות להיום', '', 'daily')}
+            ${kpi(overdue, 'באיחור', overdue ? 'is-alert' : '', 'daily')}
+            ${kpi(urgent, 'דחופות להיום', urgent ? 'is-alert' : '', 'daily')}
+            ${kpi(week, 'הושלמו ב-7 ימים', week ? 'is-good' : '', 'completed')}
+        </section>`;
+
+        // מיקוד: לפי סדר עדיפות
+        html += `<section><div class="db-h"><h3>🎯 במה להתמקד עכשיו</h3>${focus.length > 5 ? `<button onclick="setActiveTab('daily')">כל ${focus.length} המשימות ←</button>` : ''}</div>`;
+        html += focus.length
+            ? `<div class="db-focus-list">${focus.slice(0, 5).map(x => renderTaskCard(x, t, { interactive: true })).join('')}</div>`
+            : `<div class="db-card db-empty">אין משימות פתוחות להיום. ${tasks.some(x => nextOccurrence(x, false)) ? 'המשימות הבאות מופיעות למטה.' : ''}</div>`;
+        html += `</section>`;
+
+        // תזכורות קרובות + מועדים קרובים
+        const rem = upcomingReminders(2).slice(0, 6);
+        const remHtml = rem.length ? rem.map(r => {
+            const task = tasks.find(x => x.id === r.taskId) || {};
+            const d = new Date(r.ts), ds = ymd(d);
+            const hh = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            return `<div class="db-row"><span class="db-dot db-p-${task.priority || 'medium'}"></span>
+                <div class="db-row-main"><div class="db-row-title">${escapeHtml(r.title)}</div><div class="db-row-sub">${relativeDateLabel(ds)}${task.project ? ' · ' + escapeHtml(task.project) : ''}</div></div>
+                <span class="db-time">🔔 ${hh}</span></div>`;
+        }).join('') : `<p class="db-empty">אין תזכורות ב-48 השעות הקרובות.</p>`;
+
+        const horizon = ymd(addDays(new Date(), 14));
+        const deadlines = tasks.filter(x => x.category === 'general' && isPendingGeneral(x) && x.date > t && x.date <= horizon)
+            .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (priorityScore(b) - priorityScore(a)))).slice(0, 6);
+        const dlHtml = deadlines.length ? deadlines.map(x => `<div class="db-row" onclick="openEditTaskModal('${x.id}')" style="cursor:pointer"><span class="db-dot db-p-${x.priority}"></span>
+                <div class="db-row-main"><div class="db-row-title">${escapeHtml(x.title)}</div><div class="db-row-sub">${x.project ? escapeHtml(x.project) : 'חד פעמי'}</div></div>
+                <span class="db-time">${relativeDateLabel(x.date)}</span></div>`).join('') : `<p class="db-empty">אין מועדי יעד בשבועיים הקרובים.</p>`;
+
+        html += `<section class="db-grid db-two">
+            <div class="db-card"><div class="db-h"><h3>🔔 תזכורות קרובות</h3><button onclick="openSettings()">הגדרות</button></div>${remHtml}</div>
+            <div class="db-card"><div class="db-h"><h3>📆 מועדים בשבועיים הקרובים</h3><button onclick="setActiveTab('general')">הכל ←</button></div>${dlHtml}</div>
+        </section>`;
+
+        // פרויקטים
+        const projects = projectStats();
+        if (projects.length > 1 || (projects[0] && projects[0].name !== 'ללא פרויקט')) {
+            html += `<section class="db-card"><div class="db-h"><h3>📁 פרויקטים</h3><span class="db-row-sub">${projects.length} פעילים</span></div>` + projects.map(p => {
+                const total = p.open + (p.done || 0);
+                const prog = total ? Math.round(p.done / Math.max(total, 1) * 100) : 0;
+                return `<div class="db-row db-proj" data-proj="${escapeHtml(p.name)}" onclick="openProject(this.dataset.proj)">
+                    <div class="db-row-main">
+                        <div class="flex items-center gap-1.5"><span class="db-row-title">${escapeHtml(p.name)}</span>
+                            ${p.overdue ? `<span class="db-badge db-badge-high">${p.overdue} באיחור</span>` : ''}
+                            ${p.high ? `<span class="db-badge db-badge-high">${p.high} דחופות</span>` : ''}</div>
+                        <div class="db-row-sub">${p.open} פתוחות${p.next ? ' · הבא: ' + relativeDateLabel(p.next) : ''}</div>
+                        <div class="db-meter"><span style="width:${prog}%"></span></div>
+                    </div></div>`;
+            }).join('') + `</section>`;
+        }
+
+        // התקדמות שבועית
+        const days = [...Array(7)].map((_, i) => ymd(addDays(new Date(), i - 6)));
+        const vals = days.map(completionsOnDay), max = Math.max(1, ...vals);
+        html += `<section class="db-card"><div class="db-h"><h3>📈 ביצוע ב-7 הימים האחרונים</h3><span class="db-row-sub">${week} משימות</span></div>
+            <div class="db-bars">${days.map((ds, i) => `<div class="db-bar ${ds === t ? 'is-today' : ''}" title="${formatDate(ds)}: ${vals[i]}">
+                <span class="db-bar-val">${vals[i] || ''}</span>
+                <span class="db-bar-fill" style="height:${Math.round(vals[i] / max * 70)}%"></span>
+                <span class="db-bar-lbl">${DAY_SHORT[parseYmd(ds).getDay()]}׳</span></div>`).join('')}</div>
+        </section>`;
         return html;
     }
 
@@ -1178,6 +1426,7 @@
             desc: document.getElementById('task-desc').value.trim(),
             category,
             priority: document.getElementById('task-priority').value,
+            project: document.getElementById('task-project').value.trim(),
             dueTime: document.getElementById('task-due-time').value || '',
             weekDays: category === 'weekly' ? selectedWeekDays.slice() : [],
             monthDays: category === 'monthly' ? selectedMonthDays.slice() : [],
@@ -1203,7 +1452,7 @@
 
         // מעבר ללשונית שבה המשימה תופיע, כדי שהמשתמש יראה אותה
         const target = isDueOn(task, todayStr()) ? 'daily' : category;
-        if (activeTab !== target) setActiveTab(target); else renderTasks();
+        if (activeTab !== target && activeTab !== 'dashboard') setActiveTab(target); else renderTasks();
         scheduleReminders();
     }
 
@@ -1537,11 +1786,84 @@
         if (settings.sound) { initAudioContext(); playCompletionBeep(); }
         if (settings.vibrate) buzz(30);
     }
+    /* ============================================================
+       תזכורות בטלגרם (שרת הבוט: bot/worker.js)
+       ============================================================ */
+    const BOT_URL = 'https://tazkir-li-bot.shayh22.workers.dev';
+    let tgSyncTimer = null, tgSyncing = false, tgLastSync = 0;
+
+    function scheduleTelegramSync() {
+        if (!settings.tgCode) return;
+        clearTimeout(tgSyncTimer);
+        tgSyncTimer = setTimeout(() => syncTelegram(), 2500);
+    }
+
+    function updateTelegramUI() {
+        const on = !!settings.tgCode;
+        document.getElementById('tg-connect').classList.toggle('hidden', on);
+        const box = document.getElementById('tg-connected');
+        box.classList.toggle('hidden', !on); box.classList.toggle('flex', on);
+        if (on) {
+            const when = tgLastSync ? ` · סונכרן ב-${new Date(tgLastSync).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}` : '';
+            document.getElementById('tg-status').textContent = `✓ מחובר (קוד ${settings.tgCode})${when}`;
+        }
+    }
+
+    async function connectTelegram() {
+        const raw = document.getElementById('tg-code').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (raw.length !== 8) { showToast('הקוד צריך להיות 8 תווים, למשל ABCD-1234', '⚠️'); return; }
+        settings.tgCode = raw.slice(0, 4) + '-' + raw.slice(4);
+        const ok = await syncTelegram(true);
+        if (!ok) { settings.tgCode = ''; saveSettings(); updateTelegramUI(); return; }
+        saveSettings(); updateTelegramUI();
+        showToast('מחובר לטלגרם! התזכורות יגיעו לשם', '📨');
+    }
+
+    function disconnectTelegram() {
+        settings.tgCode = ''; saveSettings(); updateTelegramUI();
+        showToast('נותק. כדי למחוק גם מהבוט שלחו לו /stop', 'ℹ️');
+    }
+
+    // שולח את המשימות לבוט ומקבל משימות שסומנו "בוצע" בטלגרם
+    async function syncTelegram(loud = false) {
+        if (!settings.tgCode || tgSyncing || !navigator.onLine) return false;
+        tgSyncing = true;
+        try {
+            const payload = tasks.map(t => ({ ...t, image: null, audio: null }));
+            const res = await fetch(BOT_URL + '/sync', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json', 'x-sync-code': settings.tgCode },
+                body: JSON.stringify({ tasks: payload, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jerusalem' })
+            });
+            if (res.status === 404) { if (loud) showToast('הקוד לא נמצא. שלחו /start לבוט לקבלת קוד', '❌'); return false; }
+            if (!res.ok) throw new Error('http ' + res.status);
+            const data = await res.json();
+            let changed = 0;
+            for (const [id, dates] of Object.entries(data.extraDone || {})) {
+                const task = tasks.find(t => t.id === id);
+                if (!task) continue;
+                dates.forEach(d => {
+                    if (!(task.completions || []).some(c => c.date === d)) { task.completions = [{ date: d, at: new Date().toISOString() }, ...(task.completions || [])]; changed++; }
+                });
+                if (changed) await saveTaskToDB(task);
+            }
+            tgLastSync = Date.now();
+            if (changed) { renderTasks(); scheduleReminders(); }
+            if (loud && settings.tgCode) showToast(`סונכרנו ${data.count} משימות לטלגרם`, '📨');
+            updateTelegramUI();
+            return true;
+        } catch (e) {
+            if (loud) showToast('אין חיבור לשרת הבוט כרגע', '⚠️');
+            return false;
+        } finally { tgSyncing = false; }
+    }
+
     function openSettings() {
         document.getElementById('set-sound').checked = settings.sound;
         document.getElementById('set-vibrate').checked = settings.vibrate;
         document.getElementById('app-version').textContent = 'תזכיר לי · גרסה ' + APP_VERSION;
         updateNotifUI();
+        updateTelegramUI();
         openModal('settings-modal');
     }
     function closeSettings() { closeModal('settings-modal'); }
@@ -1574,6 +1896,7 @@
         selectedWeekDays = [new Date().getDay()];
         selectedMonthDays = [new Date().getDate()];
         document.getElementById('general-date').value = todayStr();
+        refreshProjectOptions();
         const defaultCat = ['weekly', 'monthly', 'general'].includes(activeTab) ? activeTab : 'daily';
         document.getElementById('task-category').value = defaultCat;
         renderCategoryChips();
@@ -1594,6 +1917,8 @@
         document.getElementById('task-category').value = task.category || 'daily';
         document.getElementById('task-priority').value = task.priority || 'medium';
         document.getElementById('task-due-time').value = task.dueTime || '';
+        document.getElementById('task-project').value = task.project || '';
+        refreshProjectOptions();
         selectedWeekDays = (task.weekDays || []).slice();
         selectedMonthDays = (task.monthDays || []).slice();
         document.getElementById('general-date').value = task.date || todayStr();
@@ -1847,30 +2172,50 @@
         showToast('קובץ הגיבוי נוצר', '💾');
     }
 
+    // ייבוא משימות (גיבוי מלא או חבילת משימות) - משימות קיימות עם אותו מזהה מתעדכנות
+    async function importTasksFromText(text) {
+        const parsed = JSON.parse(text);
+        const incoming = Array.isArray(parsed) ? parsed : parsed.tasks;
+        if (!Array.isArray(incoming)) throw new Error('bad format');
+        const migrated = migrateTasks(incoming.filter(t => t && t.id && t.title));
+        if (!migrated.length) throw new Error('empty');
+        const byId = new Map(tasks.map(t => [t.id, t]));
+        migrated.forEach(t => {
+            // שומרים היסטוריית ביצוע ומדיה של משימה שכבר קיימת במכשיר
+            const old = byId.get(t.id);
+            if (old) {
+                t.completions = dedupeCompletions([...(old.completions || []), ...(t.completions || [])]);
+                t.image = t.image || old.image || null;
+                t.audio = t.audio || old.audio || null;
+            }
+            byId.set(t.id, t);
+        });
+        tasks = [...byId.values()];
+        for (const t of migrated) await saveTaskToDB(t);
+        closeSettings();
+        showToast(`יובאו ${migrated.length} משימות`, '✅');
+        renderTasks(); scheduleReminders();
+        return migrated.length;
+    }
+
     function importDataFromFile(e) {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async (ev) => {
-            try {
-                const parsed = JSON.parse(ev.target.result);
-                const incoming = Array.isArray(parsed) ? parsed : parsed.tasks;
-                if (!Array.isArray(incoming)) throw new Error('bad format');
-                const migrated = migrateTasks(incoming.filter(t => t && t.id && t.title));
-                if (!migrated.length) throw new Error('empty');
-                const byId = new Map(tasks.map(t => [t.id, t]));
-                migrated.forEach(t => byId.set(t.id, t));
-                tasks = [...byId.values()];
-                for (const t of migrated) await saveTaskToDB(t);
-                closeSettings();
-                showToast(`שוחזרו ${migrated.length} משימות`, '✅');
-                renderTasks(); scheduleReminders();
-            } catch (err) {
-                showToast('קובץ הגיבוי אינו תקין', '❌');
-            }
+            try { await importTasksFromText(ev.target.result); }
+            catch (err) { showToast('הקובץ אינו תקין', '❌'); }
             e.target.value = '';
         };
         reader.readAsText(file);
+    }
+
+    async function importFromPastedText() {
+        const box = document.getElementById('import-text');
+        const text = box.value.trim();
+        if (!text) { showToast('הדבק קודם את הטקסט', 'ℹ️'); return; }
+        try { await importTasksFromText(text); box.value = ''; }
+        catch (err) { showToast('הטקסט אינו בפורמט תקין', '❌'); }
     }
 
     /* ============================================================
@@ -1895,7 +2240,7 @@
             document.addEventListener(evt, initAudioContext, { once: true, passive: true }));
         // חזרה לאפליקציה - בדיקת תזכורות שהוחמצו
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') { checkAlarms(); renderTasks(); }
+            if (document.visibilityState === 'visible') { checkAlarms(); renderTasks(); syncTelegram(); }
         });
         window.addEventListener('focus', checkAlarms);
         window.addEventListener('online', scheduleReminders);
@@ -1915,13 +2260,15 @@
         await loadTasks();
         await migrateAndPersist();
 
-        setActiveTab('daily');
+        setActiveTab('dashboard');
         updateNotifUI();
         await registerServiceWorker();
         await scheduleReminders();
 
         checkAlarms();
         setInterval(checkAlarms, 15000);
+        syncTelegram();
+        setInterval(() => syncTelegram(), 5 * 60 * 1000);
     });
     </script>
 </body>
