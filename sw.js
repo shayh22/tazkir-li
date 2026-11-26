@@ -2,7 +2,7 @@
    אחראי על: עבודה במצב לא מקוון, והצגת תזכורות ברקע (כולל כשהאפליקציה סגורה,
    בדפדפנים שתומכים ב-Periodic Background Sync או ב-Notification Triggers). */
 
-const CACHE = 'tazkir-li-v4';
+const CACHE = 'tazkir-li-v5';
 const SHELL = [
     './',
     './index.html',
