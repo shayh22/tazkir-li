@@ -528,7 +528,7 @@
                 <div>
                     <h4 class="text-xs font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">📨 תזכורות בטלגרם</h4>
                     <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-2.5">
-                        תזכורת בטלגרם בשעת כל משימה וסיכום בוקר, גם כשהאפליקציה סגורה. שלחו <b>/start</b> לבוט, והדביקו כאן את הקוד שהוא נותן.
+                        תזכורת בטלגרם בשעת כל משימה וסיכום בוקר, גם כשהאפליקציה סגורה. אפשר גם להוסיף משימות מהבוט: פשוט כותבים לו, למשל "מחר 10:00 להתקשר לרופא". שלחו <b>/start</b> לבוט, והדביקו כאן את הקוד שהוא נותן.
                         המשימות נשלחות לשרת הבוט (בלי תמונות והקלטות).
                     </p>
                     <div id="tg-connect" class="flex gap-2">
@@ -591,7 +591,7 @@
        כך משימה יומית שסומנה כבוצעה עוברת ל"הושלמו" וחוזרת מחר.
        ============================================================ */
 
-    const APP_VERSION = '2.2.0';
+    const APP_VERSION = '2.3.0';
     const DB_NAME = 'TazkirLiAppDB';
     const DB_VERSION = 3;
     const STORE_NAME = 'tasks';
@@ -1847,6 +1847,17 @@
                 });
                 if (changed) await saveTaskToDB(task);
             }
+            // משימות שנוספו / בוטלו / שונו בבוט
+            const incoming = migrateTasks((data.added || []).filter(t => t && t.id && t.title && !tasks.some(x => x.id === t.id)));
+            for (const t of incoming) { tasks.push(t); await saveTaskToDB(t); changed++; }
+            for (const id of (data.removed || [])) {
+                if (tasks.some(t => t.id === id)) { tasks = tasks.filter(t => t.id !== id); await deleteTaskFromDB(id); changed++; }
+            }
+            for (const [id, e] of Object.entries(data.edits || {})) {
+                const task = tasks.find(t => t.id === id);
+                if (task && e.priority && ['high', 'medium', 'low'].includes(e.priority) && task.priority !== e.priority) { task.priority = e.priority; await saveTaskToDB(task); changed++; }
+            }
+            if (incoming.length) showToast(incoming.length === 1 ? `נוספה משימה מטלגרם: ${incoming[0].title}` : `נוספו ${incoming.length} משימות מטלגרם`, '📨');
             tgLastSync = Date.now();
             if (changed) { renderTasks(); scheduleReminders(); }
             if (loud && settings.tgCode) showToast(`סונכרנו ${data.count} משימות לטלגרם`, '📨');

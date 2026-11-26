@@ -188,6 +188,93 @@ async function runMinute(scheduledMs, env) {
     }
 }
 
+/* ---------------- משימה מהודעה חופשית ---------------- */
+const DAYS = { 'ראשון': 0, 'שני': 1, 'שלישי': 2, 'רביעי': 3, 'חמישי': 4, 'שישי': 5, 'שבת': 6 };
+const DAY_RE = '(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)';
+function addDaysYmd(ds, n) { const [y, m, d] = ds.split('-').map(Number); const x = new Date(Date.UTC(y, m - 1, d + n)); return x.toISOString().slice(0, 10); }
+
+function parseTask(input, nowMs, tz) {
+    let s = ' ' + input.replace(/\s+/g, ' ').trim() + ' ';
+    const { date: today, time: nowTime } = localParts(nowMs, tz);
+    const cut = re => { const m = s.match(re); if (m) s = s.replace(m[0], ' '); return m; };
+    const t = { id: 'tg_' + nowMs.toString(36) + '_' + Math.floor(Math.random() * 1e4).toString(36), category: 'general', priority: 'medium', dueTime: '', weekDays: [], monthDays: [], completions: [], startDate: today, createdAt: new Date(nowMs).toISOString(), source: 'telegram' };
+
+    // עדיפות
+    if (cut(/\s(לא דחוף|רגיל|בלי לחץ)(?=\s)/)) t.priority = 'low';
+    else if (cut(/\s(דחוף מאוד|דחוף|חשוב|!!+|!)(?=\s)/) || /!\s*$/.test(s.trim()) && (s = s.replace(/!+(\s*)$/, '$1'))) t.priority = 'high';
+    // פרויקט
+    const pm = cut(/\s#([^\s#]+)/);
+    if (pm) t.project = pm[1].replace(/_/g, ' ');
+    // שעה
+    let tm = cut(/\s(?:בשעה|ב-?|ל-?)?\s?(\d{1,2}):(\d{2})(?=\s)/);
+    if (tm && Number(tm[1]) < 24 && Number(tm[2]) < 60) t.dueTime = `${tm[1].padStart(2, '0')}:${tm[2]}`;
+    else { tm = cut(/\s(?:בשעה|ב-?שעה)\s?(\d{1,2})(?=\s)/); if (tm && Number(tm[1]) < 24) t.dueTime = `${tm[1].padStart(2, '0')}:00`; }
+    if (!t.dueTime) {
+        const pt = cut(/\s(בבוקר|בצהריים|אחה"צ|אחר הצהריים|בערב|בלילה)(?=\s)/);
+        if (pt) t.dueTime = { 'בבוקר': '09:00', 'בצהריים': '12:00', 'אחה"צ': '15:00', 'אחר הצהריים': '15:00', 'בערב': '19:00', 'בלילה': '21:00' }[pt[1]];
+    }
+    // חזרתיות
+    let m;
+    if ((m = cut(new RegExp('\\sכל\\s(?:יום\\s)?' + DAY_RE + '(?:\\s?(?:ו-?|,\\s?)(?:יום\\s)?' + DAY_RE + ')?(?=\\s)')))) {
+        t.category = 'weekly'; t.weekDays = [DAYS[m[1]], ...(m[2] ? [DAYS[m[2]]] : [])];
+    } else if (cut(/\sכל יום(?=\s)|\sכל בוקר(?=\s)|\sכל ערב(?=\s)|\sיומי(?=\s)/)) {
+        t.category = 'daily';
+    } else if (cut(/\sכל שבוע(?=\s)|\sשבועי(?=\s)/)) {
+        t.category = 'weekly'; t.weekDays = [dowOf(today)];
+    } else if ((m = cut(/\s(?:ב-?)?(\d{1,2})\s?(?:לכל חודש|בכל חודש|לחודש)(?=\s)/))) {
+        t.category = 'monthly'; t.monthDays = [Math.min(31, Math.max(1, Number(m[1])))];
+    } else if (cut(/\sכל חודש(?=\s)|\sחודשי(?=\s)/)) {
+        t.category = 'monthly'; t.monthDays = [Number(today.slice(8, 10))];
+    }
+    // תאריך (למשימה חד פעמית)
+    if (t.category === 'general') {
+        let date = null;
+        if (cut(/\sמחרתיים(?=\s)/)) date = addDaysYmd(today, 2);
+        else if (cut(/\s(?:ל|עד )?מחר(?=\s)/)) date = addDaysYmd(today, 1);
+        else if (cut(/\s(?:ל|עד )?היום(?=\s)/)) date = today;
+        else if ((m = cut(/\sבעוד\s(\d{1,3}|שבוע|שבועיים|יומיים)\s?(ימים|יום)?(?=\s)/))) {
+            const n = { 'שבוע': 7, 'שבועיים': 14, 'יומיים': 2 }[m[1]] || Number(m[1]);
+            date = addDaysYmd(today, n);
+        } else if ((m = cut(new RegExp('\\s(?:ב|ל|עד )?(?:יום\\s)?' + DAY_RE + '(?:\\s?הבא)?(?=\\s)')))) {
+            if (/יום|^\s?[בל]/.test(m[0]) || m[1] !== 'שני') {
+                let n = (DAYS[m[1]] - dowOf(today) + 7) % 7;
+                if (n === 0 || /הבא/.test(m[0])) n = n || 7;
+                date = addDaysYmd(today, n);
+            } else s = s.replace(' ', m[0]); // "שני" בלי "יום" - כנראה מספר, להשאיר
+        } else if ((m = cut(/\s(?:ב-?|ל-?|עד )?(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?(?=\s)/))) {
+            const d = Number(m[1]), mo = Number(m[2]);
+            let y = m[3] ? Number(m[3].length === 2 ? '20' + m[3] : m[3]) : Number(today.slice(0, 4));
+            let cand = `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            if (!m[3] && cand < today) cand = `${y + 1}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) date = cand;
+        }
+        if (!date) date = (t.dueTime && t.dueTime <= nowTime) ? addDaysYmd(today, 1) : today;
+        t.date = date;
+    } else {
+        t.date = null;
+    }
+    t.title = s.replace(/\s+/g, ' ').replace(/^\s*(?:תזכיר לי|תזכירי לי|להזכיר לי|תזכורת)\s*[:-]?\s*/, '').replace(/^[\s,:–-]+|[\s,:–-]+$/g, '').trim().slice(0, 300);
+    return t;
+}
+
+function whenText(t, u) {
+    if (t.category === 'daily') return 'כל יום';
+    if (t.category === 'weekly') return 'כל שבוע, ביום ' + t.weekDays.map(d => Object.keys(DAYS)[d]).join(' ו');
+    if (t.category === 'monthly') return `כל חודש, ב-${t.monthDays.join(', ')}`;
+    const today = localParts(Date.now(), u.tz).date;
+    if (t.date === today) return 'היום';
+    if (t.date === addDaysYmd(today, 1)) return 'מחר';
+    return `יום ${Object.keys(DAYS)[dowOf(t.date)]}, ${fmtDate(t.date)}`;
+}
+function addedText(t, u) {
+    const p = PRIORITY[t.priority] || PRIORITY.medium;
+    return `✅ <b>נוספה משימה</b>\n${esc(t.title)}\n\n📅 ${whenText(t, u)}${t.dueTime ? ` · 🔔 ${t.dueTime}` : ' · בלי תזכורת בשעה מסוימת'}\n${p.icon} ${p.label}${t.project ? ` · 📁 ${esc(t.project)}` : ''}`;
+}
+function addedKeyboard(t) {
+    const b = (k, label) => ({ text: (t.priority === k ? '● ' : '') + label, callback_data: `p|${t.id}|${k}` });
+    return { inline_keyboard: [[b('high', '🔥 דחוף'), b('medium', '⚡ בינוני'), b('low', '🌱 רגיל')], [{ text: '❌ ביטול', callback_data: `x|${t.id}` }]] };
+}
+
 /* ---------------- טלגרם (webhook) ---------------- */
 async function handleTelegram(req, env) {
     if (req.headers.get('x-telegram-bot-api-secret-token') !== await webhookSecret(env)) return new Response('forbidden', { status: 403 });
@@ -199,6 +286,25 @@ async function handleTelegram(req, env) {
         const u = await getUser(env, code);
         const [kind, taskId, arg] = String(q.data || '').split('|');
         const t = u && (u.tasks || []).find(x => x.id === taskId);
+        if (t && (kind === 'p' || kind === 'x')) {
+            if (kind === 'p' && PRIORITY[arg]) {
+                t.priority = arg;
+                const a = (u.added || []).find(x => x.id === taskId);
+                if (a) a.priority = arg; else { u.edits = u.edits || {}; u.edits[taskId] = { ...(u.edits[taskId] || {}), priority: arg }; }
+                await putUser(env, code, u);
+                await tg(env, 'answerCallbackQuery', { callback_query_id: q.id, text: `עדיפות: ${PRIORITY[arg].label}` });
+                await tg(env, 'editMessageText', { chat_id: chatId, message_id: q.message.message_id, parse_mode: 'HTML', text: addedText(t, u), reply_markup: addedKeyboard(t) });
+            } else if (kind === 'x') {
+                u.tasks = u.tasks.filter(x => x.id !== taskId);
+                u.added = (u.added || []).filter(x => x.id !== taskId);
+                // ייתכן שהאפליקציה כבר קיבלה אותה - נבקש ממנה למחוק (נשכח כשהיא כבר לא אצלה)
+                u.removed = u.removed || []; if (!u.removed.includes(taskId)) u.removed.push(taskId);
+                await putUser(env, code, u);
+                await tg(env, 'answerCallbackQuery', { callback_query_id: q.id, text: 'המשימה בוטלה' });
+                await tg(env, 'editMessageText', { chat_id: chatId, message_id: q.message.message_id, parse_mode: 'HTML', text: `<s>${esc(t.title)}</s>\n\n❌ בוטלה` });
+            }
+            return json({ ok: true });
+        }
         if (!t) { await tg(env, 'answerCallbackQuery', { callback_query_id: q.id, text: 'המשימה לא נמצאה' }); return json({ ok: true }); }
         let note = '';
         if (kind === 'd') {
@@ -235,7 +341,7 @@ async function handleTelegram(req, env) {
             const users = await getUsers(env);
             if (!users.includes(code)) { users.push(code); await env.TASKS.put('users', JSON.stringify(users)); }
         }
-        await send(`👋 <b>ברוכים הבאים לתזכיר לי</b>\n\nקוד החיבור שלך:\n<code>${code}</code>\n\nבאפליקציה: ⚙️ הגדרות ← תזכורות בטלגרם ← מדביקים את הקוד ולוחצים "חיבור".\n\nפקודות: /today משימות להיום · /digest שעת סיכום הבוקר · /stop ניתוק`);
+        await send(`👋 <b>ברוכים הבאים לתזכיר לי</b>\n\nקוד החיבור שלך:\n<code>${code}</code>\n\nבאפליקציה: ⚙️ הגדרות ← תזכורות בטלגרם ← מדביקים את הקוד ולוחצים "חיבור".\n\n➕ <b>הוספת משימה</b>: פשוט כותבים אותה, למשל:\n<code>מחר ב-10:00 להתקשר לציפורה #אח_לטוב דחוף</code>\n<code>כל יום ראשון 09:00 סקירה שבועית</code>\n\nמבינים: היום / מחר / מחרתיים / יום שלישי / 3.12 / בעוד 5 ימים · שעה 14:30 או \"בשעה 9\" · דחוף / רגיל · #פרויקט · כל יום / כל שבוע / כל חודש / כל יום שני\n\n/today משימות להיום · /digest שעת סיכום הבוקר · /stop ניתוק`);
         return json({ ok: true });
     }
     const u = await getUser(env, code);
@@ -258,8 +364,18 @@ async function handleTelegram(req, env) {
         const users = (await getUsers(env)).filter(c => c !== code);
         await env.TASKS.put('users', JSON.stringify(users));
         await send('נותקת. המשימות נמחקו מהבוט. לחיבור מחדש: /start');
+    } else if (cmd === '/help') {
+        await send(`➕ <b>הוספת משימה</b>: פשוט כותבים אותה, למשל:\n<code>מחר ב-10:00 להתקשר לציפורה #אח_לטוב דחוף</code>\n<code>כל יום ראשון 09:00 סקירה שבועית</code>\n\nמבינים: היום / מחר / מחרתיים / יום שלישי / 3.12 / בעוד 5 ימים · שעה 14:30 או \"בשעה 9\" · דחוף / רגיל · #פרויקט · כל יום / כל שבוע / כל חודש / כל יום שני\n\n/today משימות להיום · /digest שעת סיכום הבוקר · /stop ניתוק`);
     } else {
-        await send('פקודות: /today משימות להיום · /digest שעת סיכום הבוקר · /stop ניתוק');
+        // כל טקסט אחר (או /add ...) = משימה חדשה
+        const body = cmd === '/add' ? text.replace(/^\S+\s*/, '') : text;
+        if (!body || body.startsWith('/')) { await send(`➕ <b>הוספת משימה</b>: פשוט כותבים אותה, למשל:\n<code>מחר ב-10:00 להתקשר לציפורה #אח_לטוב דחוף</code>\n<code>כל יום ראשון 09:00 סקירה שבועית</code>\n\nמבינים: היום / מחר / מחרתיים / יום שלישי / 3.12 / בעוד 5 ימים · שעה 14:30 או \"בשעה 9\" · דחוף / רגיל · #פרויקט · כל יום / כל שבוע / כל חודש / כל יום שני\n\n/today משימות להיום · /digest שעת סיכום הבוקר · /stop ניתוק`); return json({ ok: true }); }
+        const t = parseTask(body, Date.now(), u.tz);
+        if (!t.title) { await send('לא הבנתי מה המשימה. נסו למשל: <code>מחר 10:00 להתקשר לרופא</code>'); return json({ ok: true }); }
+        u.tasks = u.tasks || []; u.added = u.added || [];
+        u.tasks.push(t); u.added.push(t);
+        await putUser(env, code, u);
+        await send(addedText(t, u), { reply_markup: addedKeyboard(t) });
     }
     return json({ ok: true });
 }
@@ -293,9 +409,26 @@ async function handleSync(req, env) {
         if (left.length) extra[id] = left;
     });
     u.extraDone = extra;
+
+    // משימות שנוספו בטלגרם: נשארות עד שהאפליקציה מחזירה אותן ברשימה שלה
+    const added = (u.added || []).filter(t => !ids.has(t.id));
+    u.added = added;
+    u.tasks.push(...added);
+    // ביטולים ושינויי עדיפות שנעשו בטלגרם למשימות שכבר באפליקציה
+    const removed = (u.removed || []).filter(id => ids.has(id));
+    u.removed = removed;
+    u.tasks = u.tasks.filter(t => !removed.includes(t.id));
+    const edits = {};
+    Object.entries(u.edits || {}).forEach(([id, e]) => {
+        const t = u.tasks.find(x => x.id === id);
+        if (!t) return;
+        if (Object.keys(e).some(k => t[k] !== e[k])) { edits[id] = e; Object.assign(t, e); }
+    });
+    u.edits = edits;
+
     u.updatedAt = Date.now();
     await putUser(env, code, u);
-    return json({ ok: true, extraDone: extra, digest: u.digest || '08:00', count: u.tasks.length });
+    return json({ ok: true, extraDone: extra, added, removed, edits, digest: u.digest || '08:00', count: u.tasks.length });
 }
 
 /* ---------------- דף הדבקת הטוקן ---------------- */
@@ -379,7 +512,9 @@ async function handleSetup(url, env) {
         allowed_updates: ['message', 'callback_query'], drop_pending_updates: true
     });
     await tg(env, 'setMyCommands', { commands: [
+        { command: 'add', description: 'הוספת משימה (או פשוט לכתוב אותה)' },
         { command: 'today', description: 'המשימות שלי להיום' },
+        { command: 'help', description: 'איך כותבים משימה' },
         { command: 'digest', description: 'שעת סיכום הבוקר' },
         { command: 'start', description: 'קוד חיבור לאפליקציה' },
         { command: 'stop', description: 'ניתוק' }
